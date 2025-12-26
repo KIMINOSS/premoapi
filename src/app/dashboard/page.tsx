@@ -1,0 +1,829 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+
+// 인터페이스 설정 (API 호출용 메타데이터 - 백엔드 테스트 기준)
+const INTERFACE_CONFIG: Record<string, { docType: string; serial: string }> = {
+  'MMPM8001': { docType: 'ZFMMP_S_API_MATERIAL_MASTER', serial: '80010' },
+  'MMPM8002': { docType: 'ZFMMP_S_API_GRIV_D1', serial: '80020' },
+  'MMPM8003': { docType: 'ZFMMP_S_API_HQ_GR_INFO', serial: '80030' },
+  'MMPM8004': { docType: 'ZFMMP_S_API_GRIV_D9', serial: '80050' },
+  'MMPM8005': { docType: 'ZFMMP_S_API_SC_GI_DB', serial: '80130' },
+  'MMPM8006': { docType: 'ZFMMP_S_API_DAILY_GROSS_HQ', serial: '80060' },
+  'MMPM8007': { docType: 'ZFMMP_S_API_WEEKLY_GROSS_HQ', serial: '80070' },
+  'MMPM8008': { docType: 'ZFMMP_S_API_DISPLAY_LP_ASN_HQ', serial: '80080' },
+  'MMPM8009': { docType: 'ZFMMP_R_API_CREATE_LP_ASN_HQ', serial: '80090' },
+  'MMPM8010': { docType: 'ZFMMP_S_API_RETRO_RESULT', serial: '80100' },
+  'MMPM8011': { docType: 'ZFMMP_S_API_SC_PHY_STOCK_LIST', serial: '80110' },
+  'MMPM8012': { docType: 'ZFMMP_R_API_SC_PHY_STOCK_SAVE', serial: '80120' },
+  'MMPM8013': { docType: 'ZFMMP_S_API_REQMT_HQ', serial: '80040' },
+  'MMPM8014': { docType: 'ZFMMP_S_API_CONSIGNMNT', serial: '80140' },
+  'MMPM8015': { docType: 'ZFMMP_R_API_ADJ_CONSIGNMNT', serial: '80150' },
+};
+
+const HMC_INTERFACES = [
+  { id: 'MMPM8001', name: { ko: '품목 정보', en: 'Material Info' }, params: ['I_LIFNR', 'I_WERKS'] },
+  { id: 'MMPM8002', name: { ko: '검수 합격 통보서', en: 'Inspection Report' }, params: ['I_LIFNR', 'I_ZDSEND2_START'] },
+  { id: 'MMPM8003', name: { ko: '입고 실적 조회', en: 'GR Info Query' }, params: ['I_LIFNR', 'I_BUDAT', 'I_WERKS'] },
+  { id: 'MMPM8004', name: { ko: '월 검수 정보', en: 'Monthly Sales Info' }, params: ['I_LIFNR', 'I_SPMON'] },
+  { id: 'MMPM8005', name: { ko: '사급 매출 현황', en: 'Subcon Sales Info' }, params: ['I_LIFNR', 'I_SPMON'] },
+  { id: 'MMPM8006', name: { ko: '일별 소요량', en: 'Daily Demand' }, params: ['I_LIFNR', 'I_DISPD', 'I_ZPLDAYS', 'I_WERKS'] },
+  { id: 'MMPM8007', name: { ko: '주별 소요량', en: 'Weekly Demand' }, params: ['I_LIFNR', 'I_DISPW', 'I_WERKS'] },
+  { id: 'MMPM8008', name: { ko: '부품 출하 조회', en: 'Shipment Query' }, params: ['I_LIFNR', 'I_ERDAT'] },
+  { id: 'MMPM8009', name: { ko: '부품 출하 생성', en: 'Shipment Create' }, params: ['I_LIFNR', 'I_ZASNNO'] },
+  { id: 'MMPM8010', name: { ko: '부품 소급 정산', en: 'Retro Settlement' }, params: ['I_LIFNR', 'I_SPMON'] },
+  { id: 'MMPM8011', name: { ko: '유상사급 재고 조회', en: 'Subcon Stock Query' }, params: ['I_LIFNR', 'I_BUDAT', 'I_WERKS', 'I_STATUS'] },
+  { id: 'MMPM8012', name: { ko: '유상사급 재고 조정', en: 'Subcon Stock Adjust' }, params: ['I_LIFNR', 'I_BUDAT', 'I_WERKS'] },
+  { id: 'MMPM8013', name: { ko: '전주공장 간판발주', en: 'Kanban Order' }, params: ['I_LIFNR', 'I_WERKS'] },
+  { id: 'MMPM8014', name: { ko: '업체자율 재고 조회', en: 'VMI Stock Query' }, params: ['I_LIFNR', 'I_BASEDT', 'I_WERKS', 'I_MATNR'] },
+  { id: 'MMPM8015', name: { ko: '업체자율 재고 조정', en: 'VMI Stock Adjust' }, params: ['I_LIFNR', 'I_BASEDT', 'I_WERKS'] },
+];
+
+const KMC_INTERFACES = [
+  { id: 'MMPM8001', name: { ko: '품목 정보', en: 'Material Info' }, params: ['I_LIFNR', 'I_WERKS'] },
+  { id: 'MMPM8002', name: { ko: '검수 합격 통보서', en: 'Inspection Report' }, params: ['I_LIFNR', 'I_ZDSEND2_START'] },
+  { id: 'MMPM8003', name: { ko: '입고 실적 조회', en: 'GR Info Query' }, params: ['I_LIFNR', 'I_BUDAT', 'I_WERKS'] },
+  { id: 'MMPM8004', name: { ko: '월 검수 정보', en: 'Monthly Sales Info' }, params: ['I_LIFNR', 'I_SPMON'] },
+  { id: 'MMPM8005', name: { ko: '사급 매출 현황', en: 'Subcon Sales Info' }, params: ['I_LIFNR', 'I_SPMON'] },
+  { id: 'MMPM8006', name: { ko: '일별 소요량', en: 'Daily Demand' }, params: ['I_LIFNR', 'I_DISPD', 'I_ZPLDAYS', 'I_WERKS'] },
+  { id: 'MMPM8007', name: { ko: '주별 소요량', en: 'Weekly Demand' }, params: ['I_LIFNR', 'I_DISPW', 'I_WERKS'] },
+  { id: 'MMPM8008', name: { ko: '부품 출하 조회', en: 'Shipment Query' }, params: ['I_LIFNR', 'I_ERDAT'] },
+  { id: 'MMPM8010', name: { ko: '부품 소급 정산', en: 'Retro Settlement' }, params: ['I_LIFNR', 'I_SPMON'] },
+  { id: 'MMPM8011', name: { ko: '유상사급 재고 조회', en: 'Subcon Stock Query' }, params: ['I_LIFNR', 'I_BUDAT', 'I_WERKS', 'I_STATUS'] },
+  { id: 'MMPM8012', name: { ko: '유상사급 재고 조정', en: 'Subcon Stock Adjust' }, params: ['I_LIFNR', 'I_BUDAT', 'I_WERKS'] },
+  { id: 'MMPM8014', name: { ko: '업체자율 재고 조회', en: 'VMI Stock Query' }, params: ['I_LIFNR', 'I_BASEDT', 'I_WERKS', 'I_MATNR'] },
+  { id: 'MMPM8015', name: { ko: '업체자율 재고 조정', en: 'VMI Stock Adjust' }, params: ['I_LIFNR', 'I_BASEDT', 'I_WERKS'] },
+];
+
+// 파라미터 라벨 (한글/영어)
+const PARAM_LABELS: Record<string, { ko: string; en: string }> = {
+  'I_LIFNR': { ko: '업체코드', en: 'Vendor' },
+  'I_WERKS': { ko: '공장', en: 'Plant' },
+  'I_BUDAT': { ko: '기준일자', en: 'Base Date' },
+  'I_SPMON': { ko: '기준월', en: 'Base Month' },
+  'I_ZDSEND2_START': { ko: '전표일자', en: 'Doc Date' },
+  'I_DISPD': { ko: '일별기준일', en: 'Daily Date' },
+  'I_DISPW': { ko: '주별기준일', en: 'Weekly Date' },
+  'I_ZPLDAYS': { ko: '계획일수', en: 'Plan Days' },
+  'I_ERDAT': { ko: '생성일자', en: 'Create Date' },
+  'I_ZASNNO': { ko: 'ASN번호', en: 'ASN No' },
+  'I_STATUS': { ko: '상태', en: 'Status' },
+  'I_BASEDT': { ko: '기준일자', en: 'Base Date' },
+  'I_MATNR': { ko: '자재번호', en: 'Material' },
+};
+
+// 파라미터 라벨 가져오기
+const getParamLabel = (key: string, lang: 'ko' | 'en') => {
+  return PARAM_LABELS[key]?.[lang] || key;
+};
+
+// API 응답 필드 라벨 (한글/영어)
+const FIELD_LABELS: Record<string, { ko: string; en: string }> = {
+  // 공통
+  'MATNR': { ko: '자재번호', en: 'Material No' },
+  'MAKTX': { ko: '자재명', en: 'Material Name' },
+  'LIFNR': { ko: '업체코드', en: 'Vendor Code' },
+  'NAME1': { ko: '업체명', en: 'Vendor Name' },
+  'WERKS': { ko: '공장', en: 'Plant' },
+  'LGORT': { ko: '저장위치', en: 'Storage Loc' },
+  'MEINS': { ko: '단위', en: 'Unit' },
+  'MENGE': { ko: '수량', en: 'Quantity' },
+  'NETPR': { ko: '단가', en: 'Unit Price' },
+  'WAERS': { ko: '통화', en: 'Currency' },
+  'BUDAT': { ko: '전기일', en: 'Posting Date' },
+  'BLDAT': { ko: '증빙일', en: 'Document Date' },
+  'EBELN': { ko: '구매문서', en: 'PO Number' },
+  'EBELP': { ko: '구매항목', en: 'PO Item' },
+  'BELNR': { ko: '전표번호', en: 'Document No' },
+  'BUZEI': { ko: '전표항목', en: 'Doc Item' },
+  'GJAHR': { ko: '회계연도', en: 'Fiscal Year' },
+  'BUKRS': { ko: '회사코드', en: 'Company Code' },
+  // 품목정보
+  'MATKL': { ko: '자재그룹', en: 'Material Group' },
+  'MTART': { ko: '자재유형', en: 'Material Type' },
+  'BRGEW': { ko: '중량', en: 'Weight' },
+  'GEWEI': { ko: '중량단위', en: 'Weight Unit' },
+  'GROES': { ko: '규격', en: 'Size/Spec' },
+  'NORMT': { ko: '도번', en: 'Drawing No' },
+  'DATBI': { ko: '유효종료일', en: 'Valid To' },
+  'DATAB': { ko: '유효시작일', en: 'Valid From' },
+  'DISPO': { ko: 'MRP담당자', en: 'MRP Controller' },
+  'LGPBE': { ko: '저장위치', en: 'Storage Bin' },
+  'MDV01': { ko: '공급업체', en: 'Supplier' },
+  // 커스텀 필드
+  'ZCDVIS': { ko: '가시성', en: 'Visibility' },
+  'ZCSNACGN': { ko: 'SNA코드', en: 'SNA Code' },
+  'ZCLOGRPL': { ko: '물류대체', en: 'Log Replace' },
+  'ZCALC_CD': { ko: '계산코드', en: 'Calc Code' },
+  'ZCLSTY': { ko: '분류유형', en: 'Class Type' },
+  'ZQCONST': { ko: '수량상수', en: 'Qty Const' },
+  'ZCCASNO': { ko: 'CAS번호', en: 'CAS No' },
+  'ZQPERCS': { ko: '백분율', en: 'Percentage' },
+  'ZCPGATE': { ko: '게이트', en: 'Gate' },
+  'ZCCYCGN': { ko: '사이클', en: 'Cycle' },
+  'ZCGRTY': { ko: '그룹유형', en: 'Group Type' },
+  'ZCCAR': { ko: '차종', en: 'Car Type' },
+  'ZCQATY': { ko: '수량유형', en: 'Qty Type' },
+  // 입출고
+  'MBLNR': { ko: '자재문서', en: 'Material Doc' },
+  'ZEILE': { ko: '자재항목', en: 'Material Item' },
+  'BWART': { ko: '이동유형', en: 'Movement Type' },
+  'SHKZG': { ko: '차변/대변', en: 'Debit/Credit' },
+  'DMBTR': { ko: '금액', en: 'Amount' },
+  'ERFMG': { ko: '입고수량', en: 'GR Quantity' },
+  'ERFME': { ko: '입고단위', en: 'GR Unit' },
+  // 소요량
+  'BDMNG': { ko: '소요량', en: 'Requirement' },
+  'BDTER': { ko: '소요일', en: 'Req Date' },
+  'PLNUM': { ko: '계획번호', en: 'Plan Number' },
+  'DISPD': { ko: '기준일', en: 'Base Date' },
+  // ASN/출하
+  'ZASNNO': { ko: 'ASN번호', en: 'ASN Number' },
+  'ZNDONO': { ko: '납품번호', en: 'Delivery No' },
+  'ERDAT': { ko: '생성일', en: 'Created Date' },
+  'ERZET': { ko: '생성시간', en: 'Created Time' },
+  'ERNAM': { ko: '생성자', en: 'Created By' },
+  // 재고
+  'LABST': { ko: '가용재고', en: 'Available Stock' },
+  'INSME': { ko: '검사재고', en: 'QI Stock' },
+  'SPEME': { ko: '보류재고', en: 'Blocked Stock' },
+  'GESME': { ko: '총재고', en: 'Total Stock' },
+  // 정산
+  'SPMON': { ko: '정산월', en: 'Settlement Month' },
+  'NETWR': { ko: '정산금액', en: 'Net Amount' },
+  'ZRETRO': { ko: '소급금액', en: 'Retro Amount' },
+  // 기타
+  'ZSTATUS': { ko: '상태', en: 'Status' },
+  'ZMSG': { ko: '메시지', en: 'Message' },
+  'ZRESULT': { ko: '결과', en: 'Result' },
+};
+
+// 필드 라벨 가져오기
+const getFieldLabel = (key: string, lang: 'ko' | 'en') => {
+  return FIELD_LABELS[key]?.[lang] || key;
+};
+
+// 공장 목록 (코드정의서 기준 To-Be)
+const HMC_PLANTS = [
+  { code: '', name: { ko: '전체', en: 'All' } },
+  { code: '1000', name: { ko: 'HMC 본사', en: 'HMC HQ' } },
+  { code: '1011', name: { ko: '울산 완성차 1공장', en: 'Ulsan Vehicle P1' } },
+  { code: '1012', name: { ko: '울산 완성차 2공장', en: 'Ulsan Vehicle P2' } },
+  { code: '1013', name: { ko: '울산 완성차 3공장', en: 'Ulsan Vehicle P3' } },
+  { code: '1014', name: { ko: '울산 완성차 4공장', en: 'Ulsan Vehicle P4' } },
+  { code: '1015', name: { ko: '울산 완성차 5공장', en: 'Ulsan Vehicle P5' } },
+  { code: '101A', name: { ko: '울산 EV 공장', en: 'Ulsan EV Plant' } },
+  { code: '1019', name: { ko: '울산 TSD 공장', en: 'Ulsan TSD Plant' } },
+  { code: '1021', name: { ko: '아산 완성차 공장', en: 'Asan Vehicle' } },
+  { code: '1031', name: { ko: '전주 완성차 공장', en: 'Jeonju Vehicle' } },
+  { code: '1041', name: { ko: 'GGM 광주 완성차', en: 'GGM Gwangju' } },
+  { code: '1070', name: { ko: '울산 엔진 공장', en: 'Ulsan Engine' } },
+  { code: '1071', name: { ko: '아산 엔진 공장', en: 'Asan Engine' } },
+  { code: '1072', name: { ko: '전주 엔진 공장', en: 'Jeonju Engine' } },
+  { code: '1073', name: { ko: '울산 변속기 공장', en: 'Ulsan Trans' } },
+  { code: '1074', name: { ko: '울산 소재 공장', en: 'Ulsan Material' } },
+  { code: '1075', name: { ko: '아산 소재 공장', en: 'Asan Material' } },
+  { code: '1076', name: { ko: '전주 소재 공장', en: 'Jeonju Material' } },
+  { code: '1077', name: { ko: '울산 시트 1/2공장', en: 'Ulsan Seat P1/2' } },
+  { code: '1078', name: { ko: '울산 시트 3공장', en: 'Ulsan Seat P3' } },
+  { code: '1079', name: { ko: '충주 수소연료전지', en: 'Chungju Fuel Cell' } },
+  { code: '1081', name: { ko: '울산 KD 포장공장', en: 'Ulsan KD Pack' } },
+  { code: '1082', name: { ko: '아산 KD 포장공장', en: 'Asan KD Pack' } },
+  { code: '1083', name: { ko: '전주 KD 포장공장', en: 'Jeonju KD Pack' } },
+  { code: '1091', name: { ko: '울산 제품2 공장', en: 'Ulsan Product2' } },
+  { code: '1092', name: { ko: '울산 공통 공장', en: 'Ulsan Common' } },
+  { code: '1093', name: { ko: '아산 공통 공장', en: 'Asan Common' } },
+  { code: '1094', name: { ko: '전주 공통 공장', en: 'Jeonju Common' } },
+];
+
+const KMC_PLANTS = [
+  { code: '', name: { ko: '전체', en: 'All' } },
+  { code: '2900', name: { ko: 'Kia 공통', en: 'Kia Common' } },
+  { code: '2911', name: { ko: '광명 완성차 1공장', en: 'Gwangmyeong P1' } },
+  { code: '2912', name: { ko: '광명 EVO Plant', en: 'Gwangmyeong EVO' } },
+  { code: '2921', name: { ko: '화성 완성차 1공장', en: 'Hwaseong P1' } },
+  { code: '2922', name: { ko: '화성 완성차 2공장', en: 'Hwaseong P2' } },
+  { code: '2923', name: { ko: '화성 완성차 3공장', en: 'Hwaseong P3' } },
+  { code: '2924', name: { ko: '화성 EVO East', en: 'Hwaseong EVO E' } },
+  { code: '2925', name: { ko: '화성 EVO West', en: 'Hwaseong EVO W' } },
+  { code: '2931', name: { ko: '광주 완성차 1공장', en: 'Gwangju P1' } },
+  { code: '2932', name: { ko: '광주 완성차 2공장', en: 'Gwangju P2' } },
+  { code: '2933', name: { ko: '광주 완성차 3공장', en: 'Gwangju P3' } },
+  { code: '2934', name: { ko: '광주 완성차 버스', en: 'Gwangju Bus' } },
+  { code: '2935', name: { ko: '광주 완성차 군수', en: 'Gwangju Military' } },
+  { code: '2941', name: { ko: 'DH 서산 완성차', en: 'DH Seosan' } },
+  { code: '2971', name: { ko: '광명 엔진 공장', en: 'Gwangmyeong Engine' } },
+  { code: '2972', name: { ko: '화성 엔진 공장', en: 'Hwaseong Engine' } },
+  { code: '2973', name: { ko: '화성 변속기 공장', en: 'Hwaseong Trans' } },
+  { code: '2974', name: { ko: '화성 소재 공장', en: 'Hwaseong Material' } },
+  { code: '2975', name: { ko: '광주 소재 공장', en: 'Gwangju Material' } },
+  { code: '2981', name: { ko: '화성 KD 포장공장', en: 'Hwaseong KD Pack' } },
+  { code: '2982', name: { ko: '광주 KD 포장공장', en: 'Gwangju KD Pack' } },
+  { code: '2983', name: { ko: '광주 KD 상용', en: 'Gwangju KD Comm' } },
+  { code: '2984', name: { ko: '광주 KD 버스', en: 'Gwangju KD Bus' } },
+  { code: '2985', name: { ko: '화성 KD 특수', en: 'Hwaseong KD Spec' } },
+  { code: '2991', name: { ko: '광명 공통 공장', en: 'Gwangmyeong Common' } },
+  { code: '2992', name: { ko: '화성 공통 공장', en: 'Hwaseong Common' } },
+  { code: '2993', name: { ko: '광주 공통 공장', en: 'Gwangju Common' } },
+  { code: '2994', name: { ko: 'DH 서산 공통', en: 'DH Seosan Common' } },
+  { code: '2995', name: { ko: '광명 제품2 공장', en: 'Gwangmyeong Product2' } },
+];
+
+// 날짜 파라미터 목록 (YYYYMMDD 형식)
+const DATE_PARAMS = ['I_BUDAT', 'I_ZDSEND2_START', 'I_DISPD', 'I_DISPW', 'I_ERDAT', 'I_BASEDT'];
+
+// YYYYMMDD <-> YYYY-MM-DD 변환
+const toDateInput = (yyyymmdd: string) => {
+  if (!yyyymmdd || yyyymmdd.length !== 8) return '';
+  return `${yyyymmdd.slice(0, 4)}-${yyyymmdd.slice(4, 6)}-${yyyymmdd.slice(6, 8)}`;
+};
+
+const toYYYYMMDD = (dateStr: string) => dateStr.replace(/-/g, '');
+
+type TabType = 'HMC' | 'KMC';
+
+export default function Dashboard() {
+  const [activeTab, setActiveTab] = useState<TabType>('HMC');
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [data, setData] = useState<Record<string, unknown>[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [paramValues, setParamValues] = useState<Record<string, string>>({});
+  const [sessionTime, setSessionTime] = useState(3600); // 1시간
+  const [liveMode, setLiveMode] = useState(false);
+  const [tokens, setTokens] = useState<{ HMC: string | null; KMC: string | null }>({ HMC: null, KMC: null });
+  const [tokenLoading, setTokenLoading] = useState(false);
+  const [lang, setLang] = useState<'ko' | 'en'>('ko');
+  const [offlineSwitchCount, setOfflineSwitchCount] = useState(0);
+  const [modeLockUntil, setModeLockUntil] = useState<number | null>(null);
+
+  const interfaces = activeTab === 'HMC' ? HMC_INTERFACES : KMC_INTERFACES;
+  const currentInterface = interfaces[selectedIndex];
+
+  // 세션 타이머 (LIVE 모드에서만 작동)
+  useEffect(() => {
+    if (!liveMode) return;
+    const timer = setInterval(() => {
+      setSessionTime((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [liveMode]);
+
+  // 모드 잠금 해제 타이머
+  useEffect(() => {
+    if (!modeLockUntil) return;
+    const checkLock = setInterval(() => {
+      if (Date.now() >= modeLockUntil) {
+        setModeLockUntil(null);
+        setOfflineSwitchCount(0);
+      }
+    }, 1000);
+    return () => clearInterval(checkLock);
+  }, [modeLockUntil]);
+
+  // 탭 변경 시 선택 초기화 (토큰은 유지)
+  useEffect(() => {
+    setSelectedIndex(0);
+    setData(null);
+    setParamValues({});
+  }, [activeTab]);
+
+  // 인터페이스 선택 시 파라미터 초기화
+  useEffect(() => {
+    const newParams: Record<string, string> = {};
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const thisMonth = new Date().toISOString().slice(0, 7).replace('-', '');
+
+    currentInterface.params.forEach((p) => {
+      if (p === 'I_LIFNR') newParams[p] = 'RR4U';
+      else if (p === 'I_SPMON') newParams[p] = thisMonth;
+      else if (DATE_PARAMS.includes(p)) newParams[p] = today;
+      else if (p === 'I_WERKS') newParams[p] = '';
+      else if (p === 'I_ZPLDAYS') newParams[p] = '14';
+      else if (p === 'I_STATUS') newParams[p] = '';
+      else newParams[p] = '';
+    });
+    setParamValues(newParams);
+    setData(null);
+  }, [selectedIndex, activeTab]);
+
+  const formatTime = (seconds: number) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
+  // OAuth 토큰 발급 (HMC/KMC 동시 발급)
+  const getAllTokens = async () => {
+    setTokenLoading(true);
+    try {
+      const [hmcRes, kmcRes] = await Promise.all([
+        fetch('/api/oauth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ company: 'HMC' })
+        }),
+        fetch('/api/oauth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ company: 'KMC' })
+        })
+      ]);
+      const hmcData = await hmcRes.json();
+      const kmcData = await kmcRes.json();
+
+      setTokens({
+        HMC: hmcData.token || null,
+        KMC: kmcData.token || null
+      });
+      setSessionTime(3600); // 1시간 리셋
+      return { HMC: hmcData.token, KMC: kmcData.token };
+    } catch (err) {
+      setError(lang === 'ko' ? 'OAuth 토큰 발급 실패' : 'OAuth token failed');
+      return { HMC: null, KMC: null };
+    } finally {
+      setTokenLoading(false);
+    }
+  };
+
+  const handleQuery = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      if (liveMode) {
+        // 라이브 모드: 실제 API 호출
+        let currentToken = tokens[activeTab];
+        if (!currentToken) {
+          const newTokens = await getAllTokens();
+          currentToken = newTokens[activeTab];
+          if (!currentToken) {
+            throw new Error(lang === 'ko' ? '토큰이 없습니다. 연결을 확인하세요.' : 'No token. Check connection.');
+          }
+        }
+
+        const config = INTERFACE_CONFIG[currentInterface.id];
+        const moduleCode = activeTab === 'HMC' ? 'MMH' : 'MMK';
+
+        const payload = {
+          COMPANY: activeTab === 'HMC' ? 'HMC' : 'KIA',
+          SENDER: paramValues['I_LIFNR'] || 'RR4U',
+          RECORD_COUNT: '1',
+          IFID: currentInterface.id,
+          SERVICE_CODE: `${paramValues['I_LIFNR'] || 'RR4U'}-${moduleCode}-B-${config.serial}`,
+          DOCUMENTTYPE: config.docType,
+          TARGET_SYSTEM: 'ERPMM',
+          INDATA_JSON: JSON.stringify(paramValues)
+        };
+
+        const response = await fetch('/api/call', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ company: activeTab, token: currentToken, payload })
+        });
+
+        const json = await response.json();
+
+        if (json.E_IFRESULT === 'E') {
+          throw new Error(json.E_IFMSG || (lang === 'ko' ? '조회 실패' : 'Query failed'));
+        }
+
+        if (json.OUTDATA_JSON) {
+          const outData = typeof json.OUTDATA_JSON === 'string'
+            ? JSON.parse(json.OUTDATA_JSON)
+            : json.OUTDATA_JSON;
+          const list = outData.OUT_LIST || outData.ET_LIST || outData.ET_EXPORT_1 || [];
+          setData(Array.isArray(list) ? list : [list]);
+        } else {
+          setData([]);
+        }
+      } else {
+        // 오프라인 모드: 저장된 응답 파일에서 로드
+        const filename = `${activeTab}_${currentInterface.id}_${currentInterface.name.ko}_RR4U_20251101_response.json`;
+        const response = await fetch(`/api/responses/${encodeURIComponent(filename)}`);
+
+        if (!response.ok) {
+          throw new Error(lang === 'ko' ? '데이터를 불러올 수 없습니다' : 'Cannot load data');
+        }
+
+        const json = await response.json();
+
+        if (json.OUTDATA_JSON) {
+          const outData = typeof json.OUTDATA_JSON === 'string'
+            ? JSON.parse(json.OUTDATA_JSON)
+            : json.OUTDATA_JSON;
+          const list = outData.OUT_LIST || outData.ET_LIST || [];
+          setData(Array.isArray(list) ? list : [list]);
+        } else {
+          setData([]);
+        }
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : (lang === 'ko' ? '오류가 발생했습니다' : 'Error occurred'));
+      setData(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleExport = () => {
+    if (!data || data.length === 0) return;
+    
+    const headers = Object.keys(data[0]);
+    const csvContent = [
+      headers.join(','),
+      ...data.map(row => headers.map(h => `"${row[h] ?? ''}"`).join(','))
+    ].join('\n');
+    
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${activeTab}_${currentInterface.name[lang]}_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-100 text-gray-800 flex flex-col">
+      {/* 헤더 */}
+      <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between shadow-sm">
+        <div className="flex items-center gap-6">
+          {/* 로고 */}
+          <div className="flex items-center gap-3">
+            <img src="https://grupopremo.com/cdn/shop/files/logo_christmas_2_770x255.gif?v=1765881926" alt="PREMO" className="h-8" />
+            <span className="font-semibold text-lg text-gray-800">PREMO KOR.</span>
+            <span className="text-gray-400">|</span>
+            <span className="text-sm font-bold text-gray-600">HKMC MM Module API Caller</span>
+            <span className="px-2 py-0.5 bg-yellow-400 text-yellow-900 text-xs font-bold rounded">TEST</span>
+          </div>
+
+          {/* HMC/KMC 탭 */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setActiveTab('HMC')}
+              className={`px-6 py-2 rounded-lg font-medium transition-all ${
+                activeTab === 'HMC'
+                  ? 'bg-red-500 text-white'
+                  : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+              }`}
+            >
+              HMC
+            </button>
+            <button
+              onClick={() => setActiveTab('KMC')}
+              className={`px-6 py-2 rounded-lg font-medium transition-all ${
+                activeTab === 'KMC'
+                  ? 'bg-red-500 text-white'
+                  : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+              }`}
+            >
+              KMC
+            </button>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4">
+          {/* 라이브 모드 토글 */}
+          <div className="flex items-center gap-2">
+            <span className={`text-sm ${liveMode ? 'text-green-600' : 'text-gray-500'}`}>
+              {liveMode ? 'LIVE' : 'OFFLINE'}
+            </span>
+            <button
+              onClick={() => {
+                const newMode = !liveMode;
+
+                // 오프라인→온라인 전환 시 잠금 확인
+                if (newMode && modeLockUntil && Date.now() < modeLockUntil) {
+                  const remainSec = Math.ceil((modeLockUntil - Date.now()) / 1000);
+                  setError(lang === 'ko' ? `${remainSec}초 후 LIVE 모드 전환 가능` : `LIVE mode available in ${remainSec}s`);
+                  return;
+                }
+
+                // 온라인→오프라인 전환 시 횟수 카운트
+                if (!newMode && liveMode) {
+                  const newCount = offlineSwitchCount + 1;
+                  setOfflineSwitchCount(newCount);
+                  if (newCount >= 2) {
+                    setModeLockUntil(Date.now() + 60000); // 1분 잠금
+                  }
+                }
+
+                // 오프라인→온라인 전환 시 카운트 리셋
+                if (newMode && !liveMode) {
+                  setOfflineSwitchCount(0);
+                }
+
+                setLiveMode(newMode);
+                if (newMode && !tokens.HMC && !tokens.KMC) getAllTokens();
+              }}
+              disabled={!liveMode && modeLockUntil !== null && Date.now() < modeLockUntil}
+              className={`relative w-12 h-6 rounded-full transition-colors ${
+                liveMode ? 'bg-green-500' : modeLockUntil ? 'bg-red-300' : 'bg-gray-300'
+              }`}
+            >
+              <span
+                className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform shadow ${
+                  liveMode ? 'left-7' : 'left-1'
+                }`}
+              />
+            </button>
+          </div>
+
+          {/* 토큰 상태 */}
+          {liveMode && (
+            <div className={`flex items-center gap-1 text-xs px-2 py-1 rounded ${
+              tokens[activeTab] ? 'bg-green-100 text-green-600' : 'bg-yellow-100 text-yellow-600'
+            }`}>
+              <span className={`w-2 h-2 rounded-full ${tokens[activeTab] ? 'bg-green-500' : 'bg-yellow-500'}`} />
+              {tokenLoading ? '발급중...' : tokens[activeTab] ? 'Token OK' : 'No Token'}
+            </div>
+          )}
+
+          {/* 세션 타이머 */}
+          <div className="flex items-center gap-2 text-gray-500">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="font-mono">{formatTime(sessionTime)}</span>
+          </div>
+
+          {/* 한영전환 */}
+          <button
+            onClick={() => setLang(lang === 'ko' ? 'en' : 'ko')}
+            className="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded-lg text-sm font-medium text-gray-600 transition-colors"
+          >
+            {lang === 'ko' ? 'EN' : '한'}
+          </button>
+
+          {/* 새로고침 */}
+          <button className="p-2 hover:bg-gray-200 rounded-lg transition-colors text-gray-500">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
+
+          {/* 로그아웃 */}
+          <button
+            onClick={() => window.location.href = '/'}
+            className="flex items-center gap-2 text-gray-500 hover:text-gray-700 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            <span>Logout</span>
+          </button>
+        </div>
+      </header>
+
+      <div className="flex flex-1 overflow-hidden">
+        {/* 사이드바 - 인터페이스 목록 */}
+        <aside className="w-40 bg-white border-r border-gray-200 flex flex-col">
+          <div className="px-2 py-1 border-b border-gray-200 flex items-center justify-between">
+            <span className="text-xs font-semibold text-gray-700">{activeTab}</span>
+            <span className="text-xs text-gray-400">{interfaces.length}</span>
+          </div>
+
+          <nav className="flex-1 overflow-y-auto p-0.5">
+            {interfaces.map((iface, index) => (
+              <button
+                key={`${activeTab}-${iface.id}`}
+                onClick={() => setSelectedIndex(index)}
+                className={`w-full text-left px-1.5 py-0.5 rounded transition-all ${
+                  selectedIndex === index
+                    ? 'bg-red-500 text-white'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                <span className="text-xs">
+                  {(index + 1).toString().padStart(2, '0')} {iface.name[lang]}
+                </span>
+              </button>
+            ))}
+          </nav>
+        </aside>
+
+        {/* 메인 컨텐츠 */}
+        <main className="flex-1 flex flex-col overflow-hidden bg-gray-50">
+          {/* 상단 바 - 제목 + 액션 버튼 */}
+          <div className="px-4 py-2 border-b border-gray-200 bg-white flex items-center justify-between">
+            <div>
+              <h1 className="text-sm font-semibold text-gray-800">{currentInterface.name[lang]}</h1>
+              <p className="text-[10px] text-gray-500">
+                {data ? `Total: ${data.length}` : (lang === 'ko' ? '조회하세요' : 'Query')}
+              </p>
+            </div>
+
+            <div className="flex gap-1">
+              <button
+                onClick={handlePrint}
+                disabled={!data || data.length === 0}
+                className="flex items-center gap-1 px-2 py-1 bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed rounded text-xs text-gray-700"
+              >
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                </svg>
+                {lang === 'ko' ? '인쇄' : 'Print'}
+              </button>
+              <button
+                onClick={handleExport}
+                disabled={!data || data.length === 0}
+                className="flex items-center gap-1 px-2 py-1 bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed rounded text-xs text-white"
+              >
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                {lang === 'ko' ? '엑셀' : 'Excel'}
+              </button>
+            </div>
+          </div>
+
+          {/* INPUT DATA 입력 영역 */}
+          <div className="px-4 py-2 bg-white border-b border-gray-200">
+            <div className="flex items-end gap-2 flex-wrap">
+              {currentInterface.params.map((param) => {
+                const plants = activeTab === 'HMC' ? HMC_PLANTS : KMC_PLANTS;
+
+                // 공장 코드: 콤보박스
+                if (param === 'I_WERKS') {
+                  return (
+                    <div key={param} className="flex flex-col gap-0.5">
+                      <label className="text-[10px] text-gray-500">{getParamLabel(param, lang)}</label>
+                      <select
+                        value={paramValues[param] || ''}
+                        onChange={(e) => setParamValues({ ...paramValues, [param]: e.target.value })}
+                        className="px-1.5 py-1 bg-white border border-gray-300 rounded text-xs text-gray-800 focus:outline-none focus:border-red-500 w-36"
+                      >
+                        {plants.map((plant) => (
+                          <option key={plant.code} value={plant.code}>
+                            {plant.code ? `${plant.code} ${plant.name[lang]}` : plant.name[lang]}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  );
+                }
+
+                // 날짜 파라미터: 텍스트 + 달력
+                if (DATE_PARAMS.includes(param)) {
+                  return (
+                    <div key={param} className="flex flex-col gap-0.5">
+                      <label className="text-[10px] text-gray-500">{getParamLabel(param, lang)}</label>
+                      <div className="flex gap-0.5">
+                        <input
+                          type="text"
+                          value={paramValues[param] || ''}
+                          onChange={(e) => setParamValues({ ...paramValues, [param]: e.target.value })}
+                          placeholder="YYYYMMDD"
+                          maxLength={8}
+                          className="px-1.5 py-1 bg-gray-100 border border-gray-300 rounded text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:border-red-500 w-20"
+                        />
+                        <input
+                          type="date"
+                          value={toDateInput(paramValues[param] || '')}
+                          onChange={(e) => setParamValues({ ...paramValues, [param]: toYYYYMMDD(e.target.value) })}
+                          className="px-1 py-1 bg-white border border-gray-300 rounded text-xs text-gray-800 focus:outline-none focus:border-red-500 w-8 cursor-pointer"
+                        />
+                      </div>
+                    </div>
+                  );
+                }
+
+                // 기준월: 텍스트 + 달력
+                if (param === 'I_SPMON') {
+                  return (
+                    <div key={param} className="flex flex-col gap-0.5">
+                      <label className="text-[10px] text-gray-500">{getParamLabel(param, lang)}</label>
+                      <div className="flex gap-0.5">
+                        <input
+                          type="text"
+                          value={paramValues[param] || ''}
+                          onChange={(e) => setParamValues({ ...paramValues, [param]: e.target.value })}
+                          placeholder="YYYYMM"
+                          maxLength={6}
+                          className="px-1.5 py-1 bg-gray-100 border border-gray-300 rounded text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:border-red-500 w-16"
+                        />
+                        <input
+                          type="month"
+                          value={paramValues[param] ? `${paramValues[param].slice(0, 4)}-${paramValues[param].slice(4, 6)}` : ''}
+                          onChange={(e) => setParamValues({ ...paramValues, [param]: e.target.value.replace('-', '') })}
+                          className="px-1 py-1 bg-white border border-gray-300 rounded text-xs text-gray-800 focus:outline-none focus:border-red-500 w-8 cursor-pointer"
+                        />
+                      </div>
+                    </div>
+                  );
+                }
+
+                // 기본 텍스트 입력
+                return (
+                  <div key={param} className="flex flex-col gap-0.5">
+                    <label className="text-[10px] text-gray-500">{getParamLabel(param, lang)}</label>
+                    <input
+                      type="text"
+                      value={paramValues[param] || ''}
+                      onChange={(e) => setParamValues({ ...paramValues, [param]: e.target.value })}
+                      placeholder={param === 'I_ZPLDAYS' ? '일수' : ''}
+                      className="px-1.5 py-1 bg-white border border-gray-300 rounded text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:border-red-500 w-20"
+                    />
+                  </div>
+                );
+              })}
+
+              <button
+                onClick={handleQuery}
+                disabled={loading}
+                className="flex items-center gap-1 px-2 py-1 bg-red-500 hover:bg-red-600 disabled:opacity-50 rounded text-xs text-white transition-colors"
+              >
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                {loading ? (lang === 'ko' ? '조회중' : 'Load') : (lang === 'ko' ? '조회' : 'Query')}
+              </button>
+            </div>
+          </div>
+
+          {/* 데이터 테이블 */}
+          <div className="flex-1 overflow-auto p-6">
+            {error && (
+              <div className="bg-red-100 border border-red-300 text-red-600 px-4 py-3 rounded-lg mb-4">
+                {error}
+              </div>
+            )}
+
+            {loading && (
+              <div className="flex items-center justify-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-red-500 border-t-transparent"></div>
+              </div>
+            )}
+
+            {!loading && !data && !error && (
+              <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+                <svg className="w-16 h-16 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <p>{lang === 'ko' ? '파라미터를 입력하고 조회 버튼을 클릭하세요' : 'Enter parameters and click Query'}</p>
+              </div>
+            )}
+
+            {!loading && data && data.length === 0 && (
+              <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+                <svg className="w-16 h-16 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                </svg>
+                <p>{lang === 'ko' ? '조회 결과가 없습니다' : 'No results found'}</p>
+              </div>
+            )}
+
+            {!loading && data && data.length > 0 && (
+              <div className="bg-white rounded overflow-hidden border border-gray-200 shadow-sm">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="bg-gray-100">
+                        <th className="px-2 py-1.5 text-left font-medium text-gray-600 border-b border-gray-200">#</th>
+                        {Object.keys(data[0]).map((key) => (
+                          <th key={key} className="px-2 py-1.5 text-left font-medium text-gray-600 border-b border-gray-200 whitespace-nowrap">
+                            {getFieldLabel(key, lang)}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.map((row, idx) => (
+                        <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-2 py-1 border-b border-gray-100 text-gray-500">{idx + 1}</td>
+                          {Object.values(row).map((value, i) => (
+                            <td key={i} className="px-2 py-1 border-b border-gray-100 text-gray-800 whitespace-nowrap">
+                              {String(value ?? '')}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 상태바 */}
+          <div className="px-6 py-2 bg-white border-t border-gray-200 text-sm text-gray-500 flex justify-between items-center">
+            <span>
+              {data ? (
+                <>Ready | Rows: {data.length} | Columns: {data.length > 0 ? Object.keys(data[0]).length : 0}</>
+              ) : (
+                <>Ready</>
+              )}
+            </span>
+            <span className="text-xs text-gray-400">Developed by Minho Kim</span>
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}
