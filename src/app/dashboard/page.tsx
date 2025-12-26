@@ -176,15 +176,156 @@ const INTERFACE_FIELD_ORDER: Record<string, string[]> = {
   'MMPM8014': ['WERKS', 'LGORT', 'LGOBE', 'MATNR', 'MAKTX', 'QTY_PHYSICAL', 'QTY_WH', 'QTY_COUNT', 'QTY_BASEDT', 'QTY_ADJ', 'QTY_D1', 'QTY_D2', 'QTY_D3', 'QTY_D4', 'MEINS', 'LIFNR'],
 };
 
+// 코드 정의 (SAP 표준 + HKMC 커스텀)
+const CODE_DEFINITIONS: Record<string, Record<string, { ko: string; en: string }>> = {
+  // 이동유형 (Movement Type)
+  'BWART': {
+    '101': { ko: '입고', en: 'GR' },
+    '102': { ko: '입고취소', en: 'GR Reversal' },
+    '103': { ko: 'GR품질검사', en: 'GR for QI' },
+    '104': { ko: 'GR품질검사취소', en: 'GR for QI Rev' },
+    '122': { ko: '반품입고', en: 'Return GR' },
+    '161': { ko: '반품출고', en: 'Return GI' },
+    '201': { ko: '원가센터출고', en: 'GI Cost Center' },
+    '261': { ko: '생산출고', en: 'GI Production' },
+    '262': { ko: '생산출고취소', en: 'GI Prod Rev' },
+    '301': { ko: '창고이전', en: 'Transfer' },
+    '302': { ko: '창고이전취소', en: 'Transfer Rev' },
+    '311': { ko: '저장위치이전', en: 'SLoc Transfer' },
+    '312': { ko: '저장위치이전취소', en: 'SLoc Trans Rev' },
+    '501': { ko: '사급출고', en: 'Subcon GI' },
+    '502': { ko: '사급출고취소', en: 'Subcon GI Rev' },
+    '541': { ko: '사급입고', en: 'Subcon GR' },
+    '542': { ko: '사급입고취소', en: 'Subcon GR Rev' },
+    '601': { ko: '출하', en: 'Delivery' },
+    '602': { ko: '출하취소', en: 'Delivery Rev' },
+  },
+  // 단위 (Unit of Measure)
+  'MEINS': {
+    'EA': { ko: '개', en: 'EA' },
+    'KG': { ko: 'Kg', en: 'KG' },
+    'G': { ko: 'g', en: 'G' },
+    'L': { ko: '리터', en: 'L' },
+    'M': { ko: '미터', en: 'M' },
+    'M2': { ko: '제곱미터', en: 'M2' },
+    'M3': { ko: '세제곱미터', en: 'M3' },
+    'PC': { ko: '조각', en: 'PC' },
+    'SET': { ko: '세트', en: 'SET' },
+    'BOX': { ko: '박스', en: 'BOX' },
+    'ROL': { ko: '롤', en: 'ROL' },
+    'PAA': { ko: '팩', en: 'PAA' },
+  },
+  // 내수/수출 구분
+  'ZCDE': {
+    'D': { ko: '내수', en: 'Domestic' },
+    'E': { ko: '수출', en: 'Export' },
+  },
+  // 납품서 발행 구분
+  'ZCDVIS': {
+    'V': { ko: '정상', en: 'Normal' },
+    'N': { ko: '미발행', en: 'Not Issued' },
+    'C': { ko: '취소', en: 'Cancelled' },
+  },
+  // 상태
+  'STATUS': {
+    '10': { ko: '대기', en: 'Waiting' },
+    '20': { ko: '진행', en: 'In Progress' },
+    '30': { ko: '완료', en: 'Completed' },
+    '40': { ko: '취소', en: 'Cancelled' },
+    '50': { ko: '보류', en: 'On Hold' },
+  },
+  // ASN 유형
+  'ZASNTY': {
+    '1': { ko: '정규', en: 'Regular' },
+    '2': { ko: '긴급', en: 'Urgent' },
+    '3': { ko: '특별', en: 'Special' },
+  },
+  // 입고방식 구분
+  'ZCGRTY': {
+    'D': { ko: '직납', en: 'Direct' },
+    'M': { ko: 'MITU', en: 'MITU' },
+    'P': { ko: 'PBS', en: 'PBS' },
+    'S': { ko: '서열', en: 'Sequence' },
+  },
+  // 납입지시 구분
+  'ZCCYCGN': {
+    'D': { ko: '일일', en: 'Daily' },
+    'W': { ko: '주간', en: 'Weekly' },
+    'M': { ko: '월간', en: 'Monthly' },
+    'S': { ko: '서열', en: 'Sequence' },
+  },
+  // 입고검사
+  'ZCQATY': {
+    'N': { ko: '검사제외', en: 'No Inspection' },
+    'Q': { ko: '검사대상', en: 'QI Required' },
+    'F': { ko: '전수검사', en: 'Full Inspection' },
+  },
+  // 샵유형
+  'ZCSHOP': {
+    'B': { ko: '차체', en: 'Body' },
+    'P': { ko: '도장', en: 'Paint' },
+    'T': { ko: '의장', en: 'Trim' },
+    'E': { ko: '엔진', en: 'Engine' },
+    'A': { ko: '조립', en: 'Assembly' },
+  },
+  // 소스구분
+  'ZCSOURCE': {
+    'L': { ko: '국산', en: 'Local' },
+    'I': { ko: '수입', en: 'Import' },
+  },
+  // 입고 상세구분
+  'ZCINDLGN': {
+    '10': { ko: '정상입고', en: 'Normal GR' },
+    '20': { ko: '반품입고', en: 'Return GR' },
+    '30': { ko: '무상입고', en: 'Free GR' },
+  },
+  // 입고 Source
+  'ZCLV': {
+    'V': { ko: '업체', en: 'Vendor' },
+    'P': { ko: '공장', en: 'Plant' },
+  },
+  // 발생코드
+  'ZCOCR': {
+    'S': { ko: '소급', en: 'Retro' },
+    'N': { ko: '정상', en: 'Normal' },
+  },
+  // 플래그
+  'ZCFLAG': {
+    'S': { ko: '성공', en: 'Success' },
+    'E': { ko: '에러', en: 'Error' },
+  },
+  // 삭제 플래그
+  'LOEKZ': {
+    'X': { ko: '삭제', en: 'Deleted' },
+    '': { ko: '', en: '' },
+  },
+  // 납품완료
+  'ELIKZ': {
+    'X': { ko: '완료', en: 'Completed' },
+    '': { ko: '미완료', en: 'Not Completed' },
+  },
+};
+
 // 필드 라벨 가져오기
 // 코드 → 라벨 변환 함수
 const convertCodeToLabel = (key: string, value: any, company: 'HMC' | 'KMC', lang: 'ko' | 'en', plants: typeof HMC_PLANTS): string => {
   if (value === null || value === undefined || value === '') return '';
   const strValue = String(value);
+  
+  // WERKS는 공장 목록에서 변환
   if (key === 'WERKS') {
     const plant = plants.find(p => p.code === strValue);
     return plant ? plant.name[lang] : strValue;
   }
+  
+  // CODE_DEFINITIONS에 정의된 필드는 코드 변환
+  if (CODE_DEFINITIONS[key]) {
+    const codeMap = CODE_DEFINITIONS[key];
+    if (codeMap[strValue]) {
+      return codeMap[strValue][lang];
+    }
+  }
+  
   return strValue;
 };
 
