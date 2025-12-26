@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+export const runtime = 'edge';
+
 const HMC_API_URL = "https://stg-apigw-kr.hmg-corp.io/HGERPVENDOR/apiGERPAPIGW/GERPVENDOR/Receive";
 const KMC_API_URL = "https://stg-apigw-kr.hmg-corp.io/KGERPVENDOR/apiGERPAPIGW/GERPVENDOR/Receive";
 

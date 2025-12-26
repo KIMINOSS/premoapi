@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  /* Cloudflare Pages 호환 설정 */
 };
+
+export const runtime = 'edge';
 
 export default nextConfig;
