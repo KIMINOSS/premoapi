@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 
 // 인터페이스 설정 (API 호출용 메타데이터 - 백엔드 테스트 기준)
 const INTERFACE_CONFIG: Record<string, { docType: string; serial: string }> = {
@@ -156,11 +156,52 @@ const FIELD_LABELS: Record<string, { ko: string; en: string }> = {
   'ZSTATUS': { ko: '상태', en: 'Status' },
   'ZMSG': { ko: '메시지', en: 'Message' },
   'ZRESULT': { ko: '결과', en: 'Result' },
+
+};
+// 인터페이스별 필드 순서 (호출정보 Excel 기준)
+const INTERFACE_FIELD_ORDER: Record<string, string[]> = {
+  'MMPM8001': ['LIFNR', 'BUKRS', 'WERKS', 'MATNR', 'MDV01', 'DATAB', 'DATBI', 'MAKTX', 'MEINS', 'ZCPGATE', 'ZCCAR', 'ZCCASNO', 'ZQPERCS', 'LGPBE', 'DISPO', 'ZQCONST', 'ZCQATY', 'ZCCYCGN', 'ZCGRTY', 'ZCDVIS', 'ZCLOGRPL', 'ZCLSTY', 'ZCSNACGN', 'EBELN', 'EBELP', 'ZCALC_CD'],
+  'MMPM8002': ['ZDSEND2', 'LIFNR', 'WERKS', 'MATNR', 'ZDARR', 'LFSNR', 'REFLFSPOS', 'ZCLV', 'ZCINDLGN', 'ZQARR1', 'WEMNG', 'ZAWZUBB', 'GRUND', 'ZAPIMAMT', 'ZDSTRIN', 'EBELN', 'EBELP', 'ZNLLCVR', 'ZQLLCOP', 'ZQLLCIS', 'ZNLLCNR', 'ZAOCKEA', 'ZQPKQTY', 'ZCINSHOP', 'MBLNR', 'MBLPO', 'MJAHR'],
+  'MMPM8003': ['MBLNR', 'MJAHR', 'ZEILE', 'BUDAT', 'ZASNNO', 'ZASNTY', 'ZDIVNO', 'ZASNSEQ', 'MATNR', 'WERKS', 'LGORT', 'BWART', 'MENGE', 'MEINS', 'EBELN', 'EBELP'],
+  'MMPM8004': ['LIFNR', 'WERKS', 'MATNR', 'ZCDE', 'ZCINDLGN', 'WEMNG', 'ZAWZUBB'],
+  'MMPM8005': ['ZCDOC', 'LIFNR', 'WERKS', 'VBELN', 'MATNR', 'MAKTX', 'WAMNG', 'ZQRINERWT', 'ZANETPR', 'ZABSGAM', 'ZCSOURCE'],
+  'MMPM8006': ['MATNR', 'DISPD', 'WERKS', 'ZPNTNM', 'LIFNR', 'ZCSHOP', 'ZCLLC', 'ZCCAR', 'ZQMITU', 'ZQWBS', 'ZQPRJ', 'ZQPBS', 'ZQWIP', 'ZDATFM', 'ZDATTO', 'ZQD001', 'ZQD002', 'ZQD003', 'ZQD004', 'ZQD005', 'ZQD006', 'ZQD007', 'ZQD008', 'ZQD009', 'ZQD010', 'ZQD011', 'ZQD012', 'ZQD013', 'ZQD014', 'ZQD015', 'ZQD016', 'ZQD017', 'ZQD018', 'ZQD019', 'ZQD020', 'ZQD021', 'ZQD022', 'ZQD023', 'ZQD024', 'ZQD025', 'ZQD026', 'ZQD027', 'ZQD028', 'ZQD029', 'ZQD030', 'ZQD031', 'ZQD032', 'ZQD033', 'ZQD034', 'ZQD035', 'ZQD036', 'ZQD037', 'ZQD038', 'ZQD039', 'ZQD040', 'ZQD041', 'ZQD042', 'ZQD043', 'ZQD044', 'ZQD045', 'ZQD046', 'ZQD047', 'ZQD048', 'ZQD049', 'ZQD050', 'ZQD051', 'ZQD052', 'ZQD053', 'ZQD054', 'ZQD055', 'ZQD056', 'ZQD057', 'ZQD058', 'ZQD059', 'ZQD060', 'ZQD061', 'ZQD062', 'ZQD063', 'ZQD064', 'ZQD065', 'ZQD066', 'ZQD067', 'ZQD068', 'ZQD069', 'ZQD070', 'ZQD071', 'ZQD072', 'ZQD073', 'ZQD074', 'ZQD075', 'ZQD076', 'ZQD077', 'ZQD078', 'ZQD079', 'ZQD080', 'ZQD081', 'ZQD082', 'ZQD083', 'ZQD084', 'ZQD085', 'ZQD086', 'ZQD087', 'ZQD088', 'ZQD089', 'ZQD090', 'ZQD091', 'ZQD092', 'ZQD093', 'ZQD094', 'ZQD095', 'ZQD096', 'ZQD097', 'ZQD098', 'ZQD099', 'ZQD100', 'ZQD101', 'ZQD102', 'ZQD103', 'ZQD104', 'ZQD105', 'ZQD106', 'ZQD107', 'ZQD108', 'ZQD109', 'ZQD110', 'ZQD111', 'ZQD112', 'ZQD113', 'ZQD114', 'ZQD115', 'ZQD116', 'ZQD117', 'ZQD118', 'ZQD119', 'ZQD120', 'ZQD121', 'ZQD122', 'ZQD123', 'ZQD124', 'ZQD125', 'ZQD126', 'ZQD127', 'ZQD128', 'ZQD129', 'ZQD130', 'ZQD131', 'ZQD132', 'ZQD133', 'ZQD134', 'ZQD135', 'ZQD136', 'ZQD137', 'ZQD138', 'ZQD139', 'ZQD140', 'ZQD141', 'ZQD142', 'ZQD143', 'ZQD144', 'ZQD145', 'ZQD146', 'ZQD147', 'ZQD148', 'ZQD149', 'ZQD150'],
+  'MMPM8007': ['MATNR', 'DISPD', 'WERKS', 'ZPNTNM', 'LIFNR', 'ZCSHOP', 'ZCLLC', 'ZCCAR', 'ZQMITU', 'ZQWBS', 'ZQPRJ', 'ZQPBS', 'ZQWIP', 'ZWKFM', 'ZWKTO', 'ZQW01', 'ZQW02', 'ZQW03', 'ZQW04', 'ZQW05', 'ZQW06', 'ZQW07', 'ZQW08', 'ZQW09', 'ZQW10', 'ZQW11', 'ZQW12', 'ZQW13', 'ZQW14', 'ZQW15', 'ZQW16', 'ZQW17', 'ZQW18', 'ZQW19', 'ZQW20', 'ZQW21'],
+  'MMPM8008': ['ZASNNO', 'ZASNTY', 'ZDIVNO', 'ZDEPDAT', 'ZDEPTIM', 'ZEARDAT', 'ZEARTIM', 'ZCARNO', 'ZDLRNAME', 'ZDLRMOBL', 'ZDLTLOC', 'ZCTAG_CO', 'ZASNNO', 'ZASNSEQ', 'WERKS', 'ZPNTNM', 'MATNR', 'ZDLMENGE', 'ZGRMENGE', 'LOEKZ', 'ZNDONUM', 'ZNDOSEQ'],
+  'MMPM8009': ['ZASNNO', 'ZCFLAG', 'ZEMSG'],
+  'MMPM8010': ['LIFNR', 'SPMON', 'MATNR', 'ZCOCR', 'ZADUNPV', 'ZQOCV', 'ZAOCV', 'ZADUNPL', 'ZQOCL', 'ZAOCL', 'WAERS', 'ZDFRTA', 'ZDTRTA'],
+  'MMPM8011': ['E_DATAB', 'E_DATBI', 'MATNR', 'MAKTX', 'ZLABST_W', 'ZLABST', 'ZLABST_ALL', 'ZLABST_A', 'ZLABST_P', 'ZLABST_PHY', 'ZDIFF_QTY', 'ZPROD_QTY', 'ZDAMAGE_QTY', 'ZOTHER_QTY', 'ZREMARK', 'STATUS', 'STATUS_NM'],
+  'MMPM8012': ['MATNR', 'ZLABST_W', 'ZLABST', 'ZLABST_ALL', 'ZLABST_A', 'ZLABST_P', 'ZLABST_PHY', 'ZDIFF_QTY', 'ZPROD_QTY', 'ZDAMAGE_QTY', 'ZOTHER_QTY', 'ZREMARK'],
+  'MMPM8013': ['EBELN', 'EBELP', 'LIFNR', 'WERKS', 'MATNR', 'TXZ01', 'ERDAT', 'BSART', 'MENGE', 'MEINS', 'NETPR', 'WAERS', 'EINDT', 'ZCCYCGN', 'ZTCYTIM', 'ZCHDPOGB', 'ZCPGATE', 'ZCFDR', 'ELIKZ'],
+  'MMPM8014': ['WERKS', 'LGORT', 'LGOBE', 'MATNR', 'MAKTX', 'QTY_PHYSICAL', 'QTY_WH', 'QTY_COUNT', 'QTY_BASEDT', 'QTY_ADJ', 'QTY_D1', 'QTY_D2', 'QTY_D3', 'QTY_D4', 'MEINS', 'LIFNR'],
 };
 
 // 필드 라벨 가져오기
+// 코드 → 라벨 변환 함수
+const convertCodeToLabel = (key: string, value: any, company: 'HMC' | 'KMC', lang: 'ko' | 'en', plants: typeof HMC_PLANTS): string => {
+  if (value === null || value === undefined || value === '') return '';
+  const strValue = String(value);
+  if (key === 'WERKS') {
+    const plant = plants.find(p => p.code === strValue);
+    return plant ? plant.name[lang] : strValue;
+  }
+  return strValue;
+};
+
 const getFieldLabel = (key: string, lang: 'ko' | 'en') => {
   return FIELD_LABELS[key]?.[lang] || key;
+};
+
+// 인터페이스별 정렬된 헤더 가져오기
+const getOrderedHeaders = (interfaceId: string, dataKeys: string[]): string[] => {
+  const order = INTERFACE_FIELD_ORDER[interfaceId];
+  if (!order) {
+    return dataKeys; // 순서 정의 없으면 데이터 순서 그대로
+  }
+  // 정의된 순서대로 정렬, 없는 필드는 뒤에 추가
+  const orderedKeys = order.filter(k => dataKeys.includes(k));
+  const extraKeys = dataKeys.filter(k => !order.includes(k));
+  return [...orderedKeys, ...extraKeys];
 };
 
 // 공장 목록 (코드정의서 기준 To-Be)
@@ -246,6 +287,8 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabType>('HMC');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [data, setData] = useState<Record<string, unknown>[] | null>(null);
+  const [sortKey, setSortKey] = useState<string | null>(null);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [paramValues, setParamValues] = useState<Record<string, string>>({});
@@ -427,13 +470,37 @@ export default function Dashboard() {
     }
   };
 
+
+  // 정렬된 데이터
+  const sortedData = useMemo(() => {
+    if (!data || !sortKey) return data;
+    return [...data].sort((a, b) => {
+      const aVal = String(a[sortKey] ?? '');
+      const bVal = String(b[sortKey] ?? '');
+      const cmp = aVal.localeCompare(bVal, 'ko', { numeric: true });
+      return sortOrder === 'asc' ? cmp : -cmp;
+    });
+  }, [data, sortKey, sortOrder]);
+
+  // 헤더 클릭 정렬
+  const handleSort = (key: string) => {
+    if (sortKey === key) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortOrder('asc');
+    }
+  };
+
   const handleExport = () => {
     if (!data || data.length === 0) return;
     
-    const headers = Object.keys(data[0]);
+    const headers = getOrderedHeaders(currentInterface.id, Object.keys(data[0]));
+    const headerLabels = headers.map(h => getFieldLabel(h, lang));
+    const plants = activeTab === 'HMC' ? HMC_PLANTS : KMC_PLANTS;
     const csvContent = [
-      headers.join(','),
-      ...data.map(row => headers.map(h => `"${row[h] ?? ''}"`).join(','))
+      headerLabels.join(','),
+      ...data.map(row => headers.map(h => `"${convertCodeToLabel(h, row[h], activeTab, lang, plants)}"`).join(','))
     ].join('\n');
     
     const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8' });
@@ -463,29 +530,6 @@ export default function Dashboard() {
             <span className="px-2 py-0.5 bg-yellow-400 text-yellow-900 text-xs font-bold rounded">TEST</span>
           </div>
 
-          {/* HMC/KMC 탭 */}
-          <div className="flex gap-2">
-            <button
-              onClick={() => setActiveTab('HMC')}
-              className={`px-6 py-2 rounded-lg font-medium transition-all ${
-                activeTab === 'HMC'
-                  ? 'bg-red-500 text-white'
-                  : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-              }`}
-            >
-              HMC
-            </button>
-            <button
-              onClick={() => setActiveTab('KMC')}
-              className={`px-6 py-2 rounded-lg font-medium transition-all ${
-                activeTab === 'KMC'
-                  ? 'bg-red-500 text-white'
-                  : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-              }`}
-            >
-              KMC
-            </button>
-          </div>
         </div>
 
         <div className="flex items-center gap-4">
@@ -584,6 +628,29 @@ export default function Dashboard() {
       <div className="flex flex-1 overflow-hidden">
         {/* 사이드바 - 인터페이스 목록 */}
         <aside className="w-40 bg-white border-r border-gray-200 flex flex-col">
+          {/* HMC/KMC 탭 */}
+          <div className="flex border-b border-gray-200">
+            <button
+              onClick={() => { setActiveTab('HMC'); setSelectedIndex(0); }}
+              className={`flex-1 py-2 text-xs font-bold transition-all ${
+                activeTab === 'HMC'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              현대
+            </button>
+            <button
+              onClick={() => { setActiveTab('KMC'); setSelectedIndex(0); }}
+              className={`flex-1 py-2 text-xs font-bold transition-all ${
+                activeTab === 'KMC'
+                  ? 'bg-red-500 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              기아
+            </button>
+          </div>
           <div className="px-2 py-1 border-b border-gray-200 flex items-center justify-between">
             <span className="text-xs font-semibold text-gray-700">{activeTab}</span>
             <span className="text-xs text-gray-400">{interfaces.length}</span>
@@ -786,20 +853,25 @@ export default function Dashboard() {
                     <thead>
                       <tr className="bg-gray-100">
                         <th className="px-2 py-1.5 text-left font-medium text-gray-600 border-b border-gray-200">#</th>
-                        {Object.keys(data[0]).map((key) => (
-                          <th key={key} className="px-2 py-1.5 text-left font-medium text-gray-600 border-b border-gray-200 whitespace-nowrap">
-                            {getFieldLabel(key, lang)}
-                          </th>
+                        {getOrderedHeaders(currentInterface.id, Object.keys(data[0])).map((key) => (
+                          <th 
+                              key={key} 
+                              className="px-2 py-1.5 text-left font-medium text-gray-600 border-b border-gray-200 whitespace-nowrap cursor-pointer hover:bg-gray-100"
+                              onClick={() => handleSort(key)}
+                            >
+                              {getFieldLabel(key, lang)}
+                              {sortKey === key && (sortOrder === 'asc' ? ' ▲' : ' ▼')}
+                            </th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
-                      {data.map((row, idx) => (
+                      {(sortedData || []).map((row, idx) => (
                         <tr key={idx} className="hover:bg-gray-50 transition-colors">
                           <td className="px-2 py-1 border-b border-gray-100 text-gray-500">{idx + 1}</td>
-                          {Object.values(row).map((value, i) => (
+                          {getOrderedHeaders(currentInterface.id, Object.keys(row)).map((key, i) => (
                             <td key={i} className="px-2 py-1 border-b border-gray-100 text-gray-800 whitespace-nowrap">
-                              {String(value ?? '')}
+                              {convertCodeToLabel(key, row[key], activeTab, lang, activeTab === 'HMC' ? HMC_PLANTS : KMC_PLANTS)}
                             </td>
                           ))}
                         </tr>
