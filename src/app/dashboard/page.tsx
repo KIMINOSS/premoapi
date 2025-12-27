@@ -587,13 +587,23 @@ const getFieldLabel = (key: string, lang: 'ko' | 'en') => {
 };
 
 // 인터페이스별 정렬된 헤더 가져오기
-const getOrderedHeaders = (interfaceId: string, dataKeys: string[]): string[] => {
+const getOrderedHeaders = (interfaceId: string, dataKeys: string[], zpldays?: number): string[] => {
   const order = INTERFACE_FIELD_ORDER[interfaceId];
   if (!order) {
     return dataKeys; // 순서 정의 없으면 데이터 순서 그대로
   }
   // 정의된 순서대로 정렬, 없는 필드는 뒤에 추가
-  const orderedKeys = order.filter(k => dataKeys.includes(k));
+  let orderedKeys = order.filter(k => dataKeys.includes(k));
+  
+  // ZQD 필드 필터링: zpldays가 지정되면 해당 일수까지만 표시
+  if (zpldays && zpldays > 0) {
+    orderedKeys = orderedKeys.filter(k => {
+      if (!k.startsWith('ZQD')) return true;
+      const dayNum = parseInt(k.replace('ZQD', ''), 10);
+      return dayNum <= zpldays;
+    });
+  }
+  
   const extraKeys = dataKeys.filter(k => !order.includes(k));
   return [...orderedKeys, ...extraKeys];
 };
@@ -889,7 +899,7 @@ export default function Dashboard() {
   const handleExport = () => {
     if (!data || data.length === 0) return;
     
-    const headers = getOrderedHeaders(currentInterface.id, Object.keys(data[0]));
+    const headers = getOrderedHeaders(currentInterface.id, Object.keys(data[0]), paramValues['I_ZPLDAYS'] ? parseInt(paramValues['I_ZPLDAYS'], 10) : undefined);
     const headerLabels = headers.map(h => getFieldLabel(h, lang));
     const plants = activeTab === 'HMC' ? HMC_PLANTS : KMC_PLANTS;
     const csvContent = [
@@ -1263,7 +1273,7 @@ export default function Dashboard() {
                     <thead className="sticky top-0 z-10">
                       <tr className="bg-gray-100">
                         <th className="px-2 py-1.5 text-left font-medium text-gray-600 border-b border-gray-200 bg-gray-100 sticky left-0 z-20">#</th>
-                        {getOrderedHeaders(currentInterface.id, Object.keys(data[0])).map((key) => (
+                        {getOrderedHeaders(currentInterface.id, Object.keys(data[0]), paramValues['I_ZPLDAYS'] ? parseInt(paramValues['I_ZPLDAYS'], 10) : undefined).map((key) => (
                           <th 
                               key={key} 
                               className="px-2 py-1.5 text-left font-medium text-gray-600 border-b border-gray-200 whitespace-nowrap cursor-pointer hover:bg-gray-100"
@@ -1279,7 +1289,7 @@ export default function Dashboard() {
                       {(sortedData || []).map((row, idx) => (
                         <tr key={idx} className="hover:bg-gray-50 transition-colors">
                           <td className="px-2 py-1 border-b border-gray-100 text-gray-500 bg-white sticky left-0 z-10">{idx + 1}</td>
-                          {getOrderedHeaders(currentInterface.id, Object.keys(row)).map((key, i) => (
+                          {getOrderedHeaders(currentInterface.id, Object.keys(row), paramValues['I_ZPLDAYS'] ? parseInt(paramValues['I_ZPLDAYS'], 10) : undefined).map((key, i) => (
                             <td key={i} className="px-2 py-1 border-b border-gray-100 text-gray-800 whitespace-nowrap">
                               {convertCodeToLabel(key, row[key], activeTab, lang, activeTab === 'HMC' ? HMC_PLANTS : KMC_PLANTS)}
                             </td>
