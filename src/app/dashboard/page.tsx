@@ -63,7 +63,7 @@ const PARAM_LABELS: Record<string, { ko: string; en: string }> = {
   'I_SPMON': { ko: '기준월', en: 'Base Month' },
   'I_ZDSEND2_START': { ko: '전표일자', en: 'Doc Date' },
   'I_DISPD': { ko: '일별기준일', en: 'Daily Date' },
-  'I_DISPW': { ko: '주별기준일', en: 'Weekly Date' },
+  'I_DISPW': { ko: '기준월요일', en: 'Base Monday' },
   'I_ZPLDAYS': { ko: '계획일수', en: 'Plan Days' },
   'I_ERDAT': { ko: '생성일자', en: 'Create Date' },
   'I_ZASNNO': { ko: 'ASN번호', en: 'ASN No' },
