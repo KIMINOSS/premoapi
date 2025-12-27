@@ -7,13 +7,32 @@ export default function Login() {
   const router = useRouter();
   const [showNotice, setShowNotice] = useState(true);
   const [lang, setLang] = useState<'ko' | 'en'>('ko');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = () => {
-    router.push('/dashboard');
+    setIsLoading(true);
+    // 짧은 딜레이 후 대시보드로 이동
+    setTimeout(() => {
+      router.push('/dashboard');
+    }, 800);
   };
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      {/* 로딩 오버레이 */}
+      {isLoading && (
+        <div className="fixed inset-0 bg-black/60 flex flex-col items-center justify-center z-[100]">
+          <div className="bg-white rounded-xl p-8 shadow-2xl flex flex-col items-center">
+            <svg className="w-12 h-12 text-red-500 animate-spin mb-4" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+            <p className="text-lg font-bold text-gray-800">{lang === 'ko' ? '확인중...' : 'Verifying...'}</p>
+            <p className="text-sm text-gray-500 mt-1">{lang === 'ko' ? '잠시만 기다려주세요' : 'Please wait'}</p>
+          </div>
+        </div>
+      )}
+
       {/* 공지사항 팝업 */}
       {showNotice && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -90,9 +109,24 @@ export default function Login() {
 
         <button
           onClick={handleLogin}
-          className="w-full py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors"
+          disabled={isLoading}
+          className={`w-full py-3 text-white font-semibold rounded-lg transition-all ${
+            isLoading 
+              ? 'bg-gray-400 cursor-wait' 
+              : 'bg-red-500 hover:bg-red-600'
+          }`}
         >
-          {lang === 'ko' ? '로그인' : 'Login'}
+          {isLoading ? (
+            <span className="flex items-center justify-center gap-2">
+              <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+              </svg>
+              {lang === 'ko' ? '확인중...' : 'Verifying...'}
+            </span>
+          ) : (
+            lang === 'ko' ? '로그인' : 'Login'
+          )}
         </button>
 
         <button

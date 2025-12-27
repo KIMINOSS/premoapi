@@ -3,24 +3,31 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 
 // 입력 인터페이스 정의 (생성/조정 기능)
+// 입력 인터페이스 구성 (API 스펙 기반)
 const INPUT_INTERFACES: Record<string, {
   type: 'create' | 'adjust';
-  fields: string[];
+  // 단순 구조: fields 배열, 복합 구조: headerFields + detailFields
+  fields?: string[];
+  headerFields?: string[];  // 헤더 정보 (IT_IMPORT1 또는 상위 파라미터)
+  detailFields?: string[];  // 상세 정보 (IT_IMPORT2 또는 IN_LIST)
   description: { ko: string; en: string };
 }> = {
   'MMPM8009': {
     type: 'create',
-    fields: ['ZASNNO', 'ZDEPDAT', 'ZDEPTIM', 'ZEARDAT', 'ZEARTIM', 'ZCARNO', 'ZDLRNAME', 'ZDLRMOBL', 'WERKS', 'MATNR', 'ZDLMENGE'],
+    // IT_IMPORT1 (헤더): ASN 출발/도착 정보 - 1건
+    headerFields: ['ZASNNO', 'ZDEPDAT', 'ZDEPTIM', 'ZEARDAT', 'ZEARTIM', 'ZCARNO', 'ZDLRNAME', 'ZDLRMOBL', 'ZDIVNO', 'ZDLTLOC', 'ZCPGATE', 'ZCTAG_CO'],
+    // IT_IMPORT2 (상세): 부품별 수량 - N건
+    detailFields: ['ZASNSEQ', 'WERKS', 'MATNR', 'ZDLMENGE', 'ZDLBOX', 'ZNDONUM', 'ZNDOSEQ'],
     description: { ko: 'ASN 출하 정보 생성', en: 'Create ASN Shipment' }
   },
   'MMPM8012': {
     type: 'adjust',
-    fields: ['WERKS', 'MATNR', 'ZLABST_PHY', 'ZDIFF_QTY', 'ZPROD_QTY', 'ZDAMAGE_QTY', 'ZOTHER_QTY', 'ZREMARK'],
+    fields: ['MATNR', 'ZLABST_W', 'ZLABST', 'ZLABST_ALL', 'ZLABST_A', 'ZLABST_P', 'ZLABST_PHY', 'ZDIFF_QTY', 'ZPROD_QTY', 'ZDAMAGE_QTY', 'ZOTHER_QTY', 'ZREMARK'],
     description: { ko: '유상사급 재고 실사/조정', en: 'Subcon Stock Adjustment' }
   },
   'MMPM8015': {
     type: 'adjust',
-    fields: ['WERKS', 'MATNR', 'QTY_COUNT', 'QTY_ADJ', 'QTY_D1', 'QTY_D2', 'QTY_D3', 'QTY_D4'],
+    fields: ['WERKS', 'LGORT', 'MATNR', 'LGOBE', 'MAKTX', 'QTY_PHYSICAL', 'QTY_WH', 'QTY_COUNT', 'QTY_BASEDT', 'QTY_ADJ', 'QTY_D1', 'QTY_D2', 'QTY_D3', 'QTY_D4', 'MEINS', 'LIFNR'],
     description: { ko: '위탁재고 실사/조정', en: 'VMI Stock Adjustment' }
   }
 };
@@ -829,13 +836,14 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabType>('HMC');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [data, setData] = useState<Record<string, unknown>[] | null>(null);
+  const [columns, setColumns] = useState<string[]>([]);  // 컬럼 목록 (로딩 중에도 유지)
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [paramValues, setParamValues] = useState<Record<string, string>>({});
   const [sessionTime, setSessionTime] = useState(3600); // 1시간
-  const [liveMode, setLiveMode] = useState(false);
+  const [liveMode, setLiveMode] = useState(true);  // 페이지 진입 시 자동 LIVE 모드
   const [tokens, setTokens] = useState<{ HMC: string | null; KMC: string | null }>({ HMC: null, KMC: null });
   const [tokenLoading, setTokenLoading] = useState(false);
   const [lang, setLang] = useState<'ko' | 'en'>('ko');
@@ -844,7 +852,8 @@ export default function Dashboard() {
   
   // 입력 모드 상태
   const [isInputMode, setIsInputMode] = useState(false);
-  const [inputData, setInputData] = useState<Record<string, unknown>[]>([]);
+  const [inputData, setInputData] = useState<Record<string, unknown>[]>([]);  // 상세 데이터 (IT_IMPORT2 / IN_LIST)
+  const [headerData, setHeaderData] = useState<Record<string, string>>({});   // 헤더 데이터 (IT_IMPORT1)
   const [submitLoading, setSubmitLoading] = useState(false);
   const [submitResult, setSubmitResult] = useState<{ success: boolean; message: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -898,6 +907,14 @@ export default function Dashboard() {
     setParamValues(newParams);
     setData(null);
   }, [selectedIndex, activeTab]);
+
+  // 페이지 로드 시 자동 토큰 인증 (LIVE 모드일 때)
+  useEffect(() => {
+    if (liveMode && !tokens.HMC && !tokens.KMC && !tokenLoading) {
+      getAllTokens();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liveMode]);
 
   const formatTime = (seconds: number) => {
     const h = Math.floor(seconds / 3600);
@@ -1060,11 +1077,21 @@ export default function Dashboard() {
     }
   };
 
-  // 입력 데이터 행 추가
+  // 입력 모드 필드 계산 (복합 구조 지원)
+  const getInputFields = () => {
+    if (!inputConfig) return [];
+    // 복합 구조인 경우 detailFields 사용, 아니면 fields 사용
+    return inputConfig.detailFields || inputConfig.fields || [];
+  };
+
+  const hasHeaderFields = inputConfig?.headerFields && inputConfig.headerFields.length > 0;
+
+  // 입력 데이터 행 추가 (상세 데이터)
   const handleAddInputRow = () => {
-    if (!inputConfig) return;
+    const fields = getInputFields();
+    if (fields.length === 0) return;
     const newRow: Record<string, unknown> = {};
-    inputConfig.fields.forEach(field => {
+    fields.forEach(field => {
       newRow[field] = '';
     });
     setInputData([...inputData, newRow]);
@@ -1075,27 +1102,53 @@ export default function Dashboard() {
     setInputData(inputData.filter((_, i) => i !== index));
   };
 
-  // 입력 데이터 셀 수정
+  // 입력 데이터 셀 수정 (상세)
   const handleInputCellChange = (rowIndex: number, field: string, value: string) => {
     const newData = [...inputData];
     newData[rowIndex] = { ...newData[rowIndex], [field]: value };
     setInputData(newData);
   };
 
-  // 샘플 엑셀 다운로드
+  // 헤더 데이터 수정
+  const handleHeaderChange = (field: string, value: string) => {
+    setHeaderData(prev => ({ ...prev, [field]: value }));
+  };
+
+  // 샘플 엑셀 다운로드 (복합 구조 지원)
   const handleDownloadTemplate = async () => {
     if (!inputConfig) return;
     
     const XLSX = await import('xlsx');
-    const headers = inputConfig.fields;
-    const sampleData = [headers.reduce((acc, field) => {
-      acc[field] = '';
-      return acc;
-    }, {} as Record<string, string>)];
-    
-    const ws = XLSX.utils.json_to_sheet(sampleData);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Template');
+
+    // 복합 구조 (MMPM8009)
+    if (inputConfig.headerFields && inputConfig.detailFields) {
+      // 헤더 시트
+      const headerSample = [inputConfig.headerFields.reduce((acc, field) => {
+        acc[field] = '';
+        return acc;
+      }, {} as Record<string, string>)];
+      const wsHeader = XLSX.utils.json_to_sheet(headerSample);
+      XLSX.utils.book_append_sheet(wb, wsHeader, 'Header');
+
+      // 상세 시트
+      const detailSample = [inputConfig.detailFields.reduce((acc, field) => {
+        acc[field] = '';
+        return acc;
+      }, {} as Record<string, string>)];
+      const wsDetail = XLSX.utils.json_to_sheet(detailSample);
+      XLSX.utils.book_append_sheet(wb, wsDetail, 'Detail');
+    } else {
+      // 단순 구조
+      const fields = inputConfig.fields || [];
+      const sampleData = [fields.reduce((acc, field) => {
+        acc[field] = '';
+        return acc;
+      }, {} as Record<string, string>)];
+      const ws = XLSX.utils.json_to_sheet(sampleData);
+      XLSX.utils.book_append_sheet(wb, ws, 'Template');
+    }
+
     XLSX.writeFile(wb, `${currentInterface.id}_template.xlsx`);
   };
 
@@ -1237,7 +1290,7 @@ export default function Dashboard() {
           {/* 로고 */}
           <div className="flex items-center gap-3">
             <img src="https://grupopremo.com/cdn/shop/files/logo_christmas_2_770x255.gif?v=1765881926" alt="PREMO" className="h-8" />
-            <span className="font-semibold text-lg text-gray-800">PREMO KOR.</span>
+            <span className="font-semibold text-lg text-gray-800">PREMO KOREA</span>
             <span className="text-gray-400">|</span>
             <span className="text-sm font-bold text-gray-600">HKMC MM Module API Caller</span>
             <span className="px-2 py-0.5 bg-yellow-400 text-yellow-900 text-xs font-bold rounded">TEST</span>
@@ -1292,13 +1345,47 @@ export default function Dashboard() {
             </button>
           </div>
 
-          {/* 토큰 상태 */}
+          {/* 토큰 상태 - 서버 연결 시각화 */}
           {liveMode && (
-            <div className={`flex items-center gap-1 text-xs px-2 py-1 rounded ${
-              tokens[activeTab] ? 'bg-green-100 text-green-600' : 'bg-yellow-100 text-yellow-600'
+            <div className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-full transition-all duration-300 ${
+              tokenLoading 
+                ? 'bg-blue-50 text-blue-700 border border-blue-200' 
+                : tokens[activeTab] 
+                  ? 'bg-green-50 text-green-700 border border-green-200' 
+                  : 'bg-yellow-50 text-yellow-700 border border-yellow-200'
             }`}>
-              <span className={`w-2 h-2 rounded-full ${tokens[activeTab] ? 'bg-green-500' : 'bg-yellow-500'}`} />
-              {tokenLoading ? '발급중...' : tokens[activeTab] ? 'Token OK' : 'No Token'}
+              {tokenLoading ? (
+                <>
+                  {/* 연결 중 - 회전 아이콘 */}
+                  <div className="relative">
+                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                  </div>
+                  <span className="font-medium">{lang === 'ko' ? '연결중...' : 'Connecting...'}</span>
+                </>
+              ) : tokens[activeTab] ? (
+                <>
+                  {/* 연결됨 - 펄스 신호 */}
+                  <div className="relative flex items-center justify-center">
+                    <span className="absolute w-3 h-3 bg-green-400 rounded-full animate-ping opacity-75"></span>
+                    <span className="relative w-2.5 h-2.5 bg-green-500 rounded-full"></span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+                    </svg>
+                    <span className="font-medium">{lang === 'ko' ? '연결됨' : 'Connected'}</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* 연결 안됨 */}
+                  <span className="w-2.5 h-2.5 bg-yellow-500 rounded-full"></span>
+                  <span className="font-medium">{lang === 'ko' ? '대기중' : 'Standby'}</span>
+                </>
+              )}
             </div>
           )}
 
@@ -1328,59 +1415,68 @@ export default function Dashboard() {
           {/* 로그아웃 */}
           <button
             onClick={() => window.location.href = '/'}
-            className="flex items-center gap-2 text-gray-500 hover:text-gray-700 transition-colors"
+            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            title={lang === 'ko' ? '로그아웃' : 'Logout'}
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>
-            <span>Logout</span>
           </button>
         </div>
       </header>
 
       <div className="flex flex-1 overflow-hidden">
         {/* 사이드바 - 인터페이스 목록 */}
-        <aside className="w-40 bg-white border-r border-gray-200 flex flex-col">
+        <aside className={`w-48 bg-white border-r-2 flex flex-col transition-all duration-500 ${
+          activeTab === 'HMC' ? 'border-blue-400' : 'border-red-400'
+        }`}>
           {/* HMC/KMC 탭 */}
-          <div className="flex border-b border-gray-200">
+          <div className="text-[10px] text-gray-400 text-center py-1 bg-gray-50 border-b border-gray-100">
+            {lang === 'ko' ? '고객사 선택' : 'Select Customer'}
+          </div>
+          <div className="flex p-1 gap-1 bg-gray-100 border-b border-gray-200">
             <button
               onClick={() => { setActiveTab('HMC'); setSelectedIndex(0); }}
-              className={`flex-1 py-2 text-xs font-bold transition-all ${
+              className={`flex-1 py-2 text-xs font-bold rounded-md transition-all shadow-sm ${
                 activeTab === 'HMC'
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  ? 'bg-blue-500 text-white ring-2 ring-blue-300 ring-offset-1'
+                  : 'bg-white text-gray-600 hover:bg-blue-50 hover:text-blue-600 border border-gray-200'
               }`}
             >
-              현대
+              {lang === 'ko' ? '현대' : 'Hyundai'}
             </button>
             <button
               onClick={() => { setActiveTab('KMC'); setSelectedIndex(0); }}
-              className={`flex-1 py-2 text-xs font-bold transition-all ${
+              className={`flex-1 py-2 text-xs font-bold rounded-md transition-all shadow-sm ${
                 activeTab === 'KMC'
-                  ? 'bg-red-500 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  ? 'bg-red-500 text-white ring-2 ring-red-300 ring-offset-1'
+                  : 'bg-white text-gray-600 hover:bg-red-50 hover:text-red-600 border border-gray-200'
               }`}
             >
-              기아
+              {lang === 'ko' ? '기아' : 'Kia'}
             </button>
           </div>
-          <div className="px-2 py-1 border-b border-gray-200 flex items-center justify-between">
-            <span className="text-xs font-semibold text-gray-700">{activeTab}</span>
-            <span className="text-xs text-gray-400">{interfaces.length}</span>
+          <div className={`px-3 py-2 border-b-2 flex items-center justify-between ${
+            activeTab === 'HMC' ? 'border-blue-400 bg-blue-50' : 'border-red-400 bg-red-50'
+          }`}>
+            <span className={`text-lg font-bold ${
+              activeTab === 'HMC' ? 'text-blue-700' : 'text-red-700'
+            }`}>{activeTab}</span>
+            <span className="text-sm font-medium text-gray-500">{interfaces.length}</span>
           </div>
 
-          <nav className="flex-1 overflow-y-auto p-0.5">
+          <nav className="flex-1 overflow-y-auto p-1">
             {interfaces.map((iface, index) => (
               <button
                 key={`${activeTab}-${iface.id}`}
                 onClick={() => setSelectedIndex(index)}
-                className={`w-full text-left px-1.5 py-0.5 rounded transition-all ${
+                className={`w-full text-left px-2 py-1 rounded transition-all ${
                   selectedIndex === index
                     ? 'bg-red-500 text-white'
                     : 'text-gray-600 hover:bg-gray-100'
                 }`}
               >
-                <span className="text-xs">
+                <span className="text-sm">
                   {(index + 1).toString().padStart(2, '0')} {iface.name[lang]}
                 </span>
               </button>
@@ -1389,7 +1485,9 @@ export default function Dashboard() {
         </aside>
 
         {/* 메인 컨텐츠 */}
-        <main className="flex-1 flex flex-col overflow-hidden bg-gray-50">
+        <main className={`flex-1 flex flex-col overflow-hidden bg-gray-50 border-t-2 transition-all duration-500 ${
+          activeTab === 'HMC' ? 'border-blue-400' : 'border-red-400'
+        }`}>
           {/* 상단 바 - 제목 + 액션 버튼 */}
           <div className="px-4 py-2 border-b border-gray-200 bg-white flex items-center justify-between">
             <div>
@@ -1449,12 +1547,12 @@ export default function Dashboard() {
                   );
                 }
 
-                // 날짜 파라미터: 텍스트 + 달력
+                // 날짜 파라미터: 텍스트 + 달력 아이콘
                 if (DATE_PARAMS.includes(param)) {
                   return (
                     <div key={param} className="flex flex-col gap-0.5">
                       <label className="text-[10px] text-gray-500">{getParamLabel(param, lang)}</label>
-                      <div className="flex gap-0.5">
+                      <div className="flex gap-0.5 items-center">
                         <input
                           type="text"
                           value={paramValues[param] || ''}
@@ -1463,23 +1561,28 @@ export default function Dashboard() {
                           maxLength={8}
                           className="px-1.5 py-1 bg-gray-100 border border-gray-300 rounded text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:border-red-500 w-20"
                         />
-                        <input
-                          type="date"
-                          value={toDateInput(paramValues[param] || '')}
-                          onChange={(e) => setParamValues({ ...paramValues, [param]: toYYYYMMDD(e.target.value) })}
-                          className="px-1 py-1 bg-white border border-gray-300 rounded text-xs text-gray-800 focus:outline-none focus:border-red-500 w-8 cursor-pointer"
-                        />
+                        <label className="relative cursor-pointer p-1 hover:bg-gray-100 rounded transition-colors">
+                          <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <input
+                            type="date"
+                            value={toDateInput(paramValues[param] || '')}
+                            onChange={(e) => setParamValues({ ...paramValues, [param]: toYYYYMMDD(e.target.value) })}
+                            className="absolute inset-0 opacity-0 cursor-pointer"
+                          />
+                        </label>
                       </div>
                     </div>
                   );
                 }
 
-                // 기준월: 텍스트 + 달력
+                // 기준월: 텍스트 + 달력 아이콘
                 if (param === 'I_SPMON') {
                   return (
                     <div key={param} className="flex flex-col gap-0.5">
                       <label className="text-[10px] text-gray-500">{getParamLabel(param, lang)}</label>
-                      <div className="flex gap-0.5">
+                      <div className="flex gap-0.5 items-center">
                         <input
                           type="text"
                           value={paramValues[param] || ''}
@@ -1488,12 +1591,17 @@ export default function Dashboard() {
                           maxLength={6}
                           className="px-1.5 py-1 bg-gray-100 border border-gray-300 rounded text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:border-red-500 w-16"
                         />
-                        <input
-                          type="month"
-                          value={paramValues[param] ? `${paramValues[param].slice(0, 4)}-${paramValues[param].slice(4, 6)}` : ''}
-                          onChange={(e) => setParamValues({ ...paramValues, [param]: e.target.value.replace('-', '') })}
-                          className="px-1 py-1 bg-white border border-gray-300 rounded text-xs text-gray-800 focus:outline-none focus:border-red-500 w-8 cursor-pointer"
-                        />
+                        <label className="relative cursor-pointer p-1 hover:bg-gray-100 rounded transition-colors">
+                          <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <input
+                            type="month"
+                            value={paramValues[param] ? `${paramValues[param].slice(0, 4)}-${paramValues[param].slice(4, 6)}` : ''}
+                            onChange={(e) => setParamValues({ ...paramValues, [param]: e.target.value.replace('-', '') })}
+                            className="absolute inset-0 opacity-0 cursor-pointer"
+                          />
+                        </label>
                       </div>
                     </div>
                   );
@@ -1516,7 +1624,7 @@ export default function Dashboard() {
 
               <button
                 onClick={handleQuery}
-                disabled={loading || isInputMode}
+                disabled={loading}
                 className="flex items-center gap-1 px-2 py-1 bg-red-500 hover:bg-red-600 disabled:opacity-50 rounded text-xs text-white transition-colors"
               >
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1529,7 +1637,7 @@ export default function Dashboard() {
               {isInputInterface && (
                 <>
                   <button
-                    onClick={() => { setIsInputMode(!isInputMode); setInputData([]); setSubmitResult(null); }}
+                    onClick={() => { setIsInputMode(!isInputMode); setInputData([]); setHeaderData({}); setSubmitResult(null); }}
                     className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors ${
                       isInputMode 
                         ? 'bg-orange-500 hover:bg-orange-600 text-white' 
@@ -1549,7 +1657,8 @@ export default function Dashboard() {
           {/* 입력 모드 UI */}
           {isInputMode && inputConfig && (
             <div className="px-4 py-3 bg-orange-50 border-b border-orange-200">
-              <div className="flex items-center justify-between mb-2">
+              {/* 헤더 영역: 제목 + 버튼들 */}
+              <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-orange-800">
                     {inputConfig.description[lang]}
@@ -1559,120 +1668,118 @@ export default function Dashboard() {
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  {/* 템플릿 다운로드 */}
-                  <button
-                    onClick={handleDownloadTemplate}
-                    className="flex items-center gap-1 px-2 py-1 bg-gray-200 hover:bg-gray-300 rounded text-xs text-gray-700"
-                  >
-                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
+                  <button onClick={handleDownloadTemplate} className="flex items-center gap-1 px-2 py-1 bg-gray-200 hover:bg-gray-300 rounded text-xs text-gray-700">
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                     {lang === 'ko' ? '템플릿' : 'Template'}
                   </button>
-                  
-                  {/* 엑셀 업로드 */}
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    accept=".xlsx,.xls"
-                    onChange={handleExcelUpload}
-                    className="hidden"
-                  />
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center gap-1 px-2 py-1 bg-green-600 hover:bg-green-700 rounded text-xs text-white"
-                  >
-                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                    </svg>
-                    {lang === 'ko' ? '엑셀 업로드' : 'Upload Excel'}
+                  <input type="file" ref={fileInputRef} accept=".xlsx,.xls" onChange={handleExcelUpload} className="hidden" />
+                  <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-1 px-2 py-1 bg-green-600 hover:bg-green-700 rounded text-xs text-white">
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                    {lang === 'ko' ? '엑셀' : 'Excel'}
                   </button>
-
-                  {/* 행 추가 */}
-                  <button
-                    onClick={handleAddInputRow}
-                    className="flex items-center gap-1 px-2 py-1 bg-blue-500 hover:bg-blue-600 rounded text-xs text-white"
-                  >
-                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                    {lang === 'ko' ? '행 추가' : 'Add Row'}
+                  <button onClick={handleAddInputRow} className="flex items-center gap-1 px-2 py-1 bg-blue-500 hover:bg-blue-600 rounded text-xs text-white">
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                    {lang === 'ko' ? '+ 상세' : '+ Detail'}
                   </button>
-
-                  {/* 전송 */}
-                  <button
-                    onClick={handleSubmitInput}
-                    disabled={submitLoading || inputData.length === 0 || !liveMode}
-                    className="flex items-center gap-1 px-3 py-1 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 rounded text-xs text-white font-medium"
-                  >
-                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                    </svg>
-                    {submitLoading ? (lang === 'ko' ? '전송중...' : 'Sending...') : (lang === 'ko' ? '전송' : 'Submit')}
+                  <button onClick={handleSubmitInput} disabled={submitLoading || inputData.length === 0 || !liveMode} className="flex items-center gap-1 px-3 py-1 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 rounded text-xs text-white font-medium">
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
+                    {submitLoading ? '...' : (lang === 'ko' ? '전송' : 'Send')}
                   </button>
                 </div>
               </div>
 
-              {/* 전송 결과 메시지 */}
+              {/* 전송 결과 */}
               {submitResult && (
-                <div className={`px-3 py-2 rounded text-xs mb-2 ${
-                  submitResult.success 
-                    ? 'bg-green-100 text-green-700 border border-green-300' 
-                    : 'bg-red-100 text-red-700 border border-red-300'
-                }`}>
+                <div className={`px-3 py-2 rounded text-xs mb-3 ${submitResult.success ? 'bg-green-100 text-green-700 border border-green-300' : 'bg-red-100 text-red-700 border border-red-300'}`}>
                   {submitResult.message}
                 </div>
               )}
 
-              {/* 입력 테이블 */}
-              {inputData.length > 0 && (
-                <div className="bg-white rounded border border-orange-200 overflow-x-auto max-h-48">
-                  <table className="w-full text-xs">
-                    <thead className="sticky top-0 bg-orange-100">
-                      <tr>
-                        <th className="px-2 py-1 text-left text-orange-800 border-b border-orange-200">#</th>
-                        {inputConfig.fields.map(field => (
-                          <th key={field} className="px-2 py-1 text-left text-orange-800 border-b border-orange-200 whitespace-nowrap">
+              {/* MMPM8009 복합 구조: 헤더 폼 + 상세 테이블 */}
+              {hasHeaderFields && inputConfig.headerFields && (
+                <div className="mb-3">
+                  <div className="text-xs font-medium text-orange-700 mb-2 flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                    {lang === 'ko' ? '출하 정보 (헤더)' : 'Shipment Info (Header)'}
+                  </div>
+                  <div className="bg-white rounded border border-orange-200 p-3">
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                      {inputConfig.headerFields.map(field => (
+                        <div key={field} className="flex flex-col">
+                          <label className="text-[10px] text-gray-500 mb-0.5 truncate" title={getFieldLabel(field, lang)}>
                             {getFieldLabel(field, lang)}
-                          </th>
-                        ))}
-                        <th className="px-2 py-1 text-center text-orange-800 border-b border-orange-200">
-                          {lang === 'ko' ? '삭제' : 'Del'}
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {inputData.map((row, rowIndex) => (
-                        <tr key={rowIndex} className="hover:bg-orange-50">
-                          <td className="px-2 py-1 border-b border-orange-100 text-gray-500">{rowIndex + 1}</td>
-                          {inputConfig.fields.map(field => (
-                            <td key={field} className="px-1 py-0.5 border-b border-orange-100">
-                              <input
-                                type="text"
-                                value={String(row[field] || '')}
-                                onChange={(e) => handleInputCellChange(rowIndex, field, e.target.value)}
-                                className="w-full px-1 py-0.5 border border-gray-200 rounded text-xs focus:outline-none focus:border-orange-400"
-                              />
-                            </td>
-                          ))}
-                          <td className="px-2 py-1 border-b border-orange-100 text-center">
-                            <button
-                              onClick={() => handleDeleteInputRow(rowIndex)}
-                              className="text-red-500 hover:text-red-700"
-                            >
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                            </button>
-                          </td>
-                        </tr>
+                          </label>
+                          <input
+                            type="text"
+                            value={headerData[field] || ''}
+                            onChange={(e) => handleHeaderChange(field, e.target.value)}
+                            placeholder={field}
+                            className="w-full px-2 py-1 border border-gray-200 rounded text-xs focus:outline-none focus:border-orange-400"
+                          />
+                        </div>
                       ))}
-                    </tbody>
-                  </table>
+                    </div>
+                  </div>
                 </div>
               )}
 
-              {inputData.length === 0 && (
+              {/* 상세 테이블 (IT_IMPORT2 / IN_LIST) */}
+              {getInputFields().length > 0 && (
+                <>
+                  {hasHeaderFields && (
+                    <div className="text-xs font-medium text-orange-700 mb-2 flex items-center gap-1">
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
+                      {lang === 'ko' ? '부품 상세 (N건)' : 'Part Details (N rows)'}
+                    </div>
+                  )}
+                  {inputData.length > 0 ? (
+                    <div className="bg-white rounded border border-orange-200 overflow-x-auto max-h-40">
+                      <table className="w-full text-xs">
+                        <thead className="sticky top-0 bg-orange-100">
+                          <tr>
+                            <th className="px-1.5 py-1 text-left text-orange-800 border-b border-orange-200 w-8">#</th>
+                            {getInputFields().map(field => (
+                              <th key={field} className="px-1.5 py-1 text-left text-orange-800 border-b border-orange-200 whitespace-nowrap text-[11px]">
+                                {getFieldLabel(field, lang)}
+                              </th>
+                            ))}
+                            <th className="px-1.5 py-1 text-center text-orange-800 border-b border-orange-200 w-8">×</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {inputData.map((row, rowIndex) => (
+                            <tr key={rowIndex} className="hover:bg-orange-50">
+                              <td className="px-1.5 py-0.5 border-b border-orange-100 text-gray-400 text-[10px]">{rowIndex + 1}</td>
+                              {getInputFields().map(field => (
+                                <td key={field} className="px-0.5 py-0.5 border-b border-orange-100">
+                                  <input
+                                    type="text"
+                                    value={String(row[field] || '')}
+                                    onChange={(e) => handleInputCellChange(rowIndex, field, e.target.value)}
+                                    className="w-full min-w-[60px] px-1 py-0.5 border border-gray-200 rounded text-[11px] focus:outline-none focus:border-orange-400"
+                                  />
+                                </td>
+                              ))}
+                              <td className="px-1 py-0.5 border-b border-orange-100 text-center">
+                                <button onClick={() => handleDeleteInputRow(rowIndex)} className="text-red-400 hover:text-red-600">
+                                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-3 text-orange-600 text-xs bg-white rounded border border-orange-200">
+                      {lang === 'ko' ? '[+ 상세] 버튼으로 부품 정보를 추가하세요' : 'Click [+ Detail] to add parts'}
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* 단순 구조일 때 빈 데이터 안내 */}
+              {!hasHeaderFields && inputData.length === 0 && (
                 <div className="text-center py-4 text-orange-600 text-sm">
                   {lang === 'ko' 
                     ? '엑셀 파일을 업로드하거나 [행 추가] 버튼을 클릭하세요' 
@@ -1683,7 +1790,7 @@ export default function Dashboard() {
           )}
 
           {/* 데이터 테이블 */}
-          <div className="flex-1 overflow-auto p-6">
+          <div className="flex-1 overflow-auto p-2">
             {error && (
               <div className="bg-red-100 border border-red-300 text-red-600 px-4 py-3 rounded-lg mb-4">
                 {error}
@@ -1696,84 +1803,93 @@ export default function Dashboard() {
               </div>
             )}
 
-            {!loading && !data && !error && (
-              <div className="flex flex-col items-center justify-center h-64 text-gray-400">
-                <svg className="w-16 h-16 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <p>{lang === 'ko' ? '파라미터를 입력하고 조회 버튼을 클릭하세요' : 'Enter parameters and click Query'}</p>
-              </div>
-            )}
-
-            {!loading && data && data.length === 0 && (
-              <div className="flex flex-col items-center justify-center h-64 text-gray-400">
-                <svg className="w-16 h-16 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                </svg>
-                <p>{lang === 'ko' ? '조회 결과가 없습니다' : 'No results found'}</p>
-              </div>
-            )}
-
-            {!loading && data && data.length > 0 && (
-              <div className="bg-white rounded overflow-hidden border border-gray-200 shadow-sm">
-                {/* 스크롤 네비게이션 바 */}
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 border-b border-gray-200">
-                  <span className="text-xs text-gray-500">컬럼:</span>
-                  <span className="text-xs font-medium text-gray-700">{data.length > 0 ? Object.keys(data[0]).length : 0}개</span>
-                  <span className="text-gray-300">|</span>
-                  <span className="text-xs text-gray-500">← → 키로 스크롤</span>
-                  <div className="flex-1" />
-                  <button 
-                    onClick={() => { const el = document.getElementById('data-table'); if(el) el.scrollLeft = 0; }}
-                    className="px-2 py-0.5 text-xs bg-gray-200 hover:bg-gray-300 rounded"
-                  >◀ 처음</button>
-                  <button 
-                    onClick={() => { const el = document.getElementById('data-table'); if(el) el.scrollLeft = el.scrollWidth; }}
-                    className="px-2 py-0.5 text-xs bg-gray-200 hover:bg-gray-300 rounded"
-                  >끝 ▶</button>
-                </div>
-                <div id="data-table" className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-320px)]" style={{scrollbarWidth: 'auto', scrollbarColor: '#94a3b8 #e2e8f0'}}>
-                  <table className="w-full text-xs">
-                    <thead className="sticky top-0 z-10">
-                      <tr className="bg-gray-100">
-                        <th className="px-2 py-1.5 text-left font-medium text-gray-600 border-b border-gray-200 bg-gray-100 sticky left-0 z-20">#</th>
-                        {getOrderedHeaders(currentInterface.id, Object.keys(data[0]), paramValues['I_ZPLDAYS'] ? parseInt(paramValues['I_ZPLDAYS'], 10) : undefined).map((key) => (
-                          <th 
-                              key={key} 
-                              className="px-2 py-1.5 text-left font-medium text-gray-600 border-b border-gray-200 whitespace-nowrap cursor-pointer hover:bg-gray-100"
-                              onClick={() => handleSort(key)}
-                            >
-                              {getFieldLabel(key, lang)}
-                              {sortKey === key && (sortOrder === 'asc' ? ' ▲' : ' ▼')}
-                            </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(sortedData || []).map((row, idx) => (
-                        <tr key={idx} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-2 py-1 border-b border-gray-100 text-gray-500 bg-white sticky left-0 z-10">{idx + 1}</td>
-                          {getOrderedHeaders(currentInterface.id, Object.keys(row), paramValues['I_ZPLDAYS'] ? parseInt(paramValues['I_ZPLDAYS'], 10) : undefined).map((key, i) => (
-                            <td key={i} className="px-2 py-1 border-b border-gray-100 text-gray-800 whitespace-nowrap">
-                              {convertCodeToLabel(key, row[key], activeTab, lang, activeTab === 'HMC' ? HMC_PLANTS : KMC_PLANTS)}
-                            </td>
+            {/* 스프레드시트 항상 표시 (데이터 유무 관계없이) */}
+            {!loading && (() => {
+              // 헤더 결정: 데이터가 있으면 데이터에서, 없으면 INTERFACE_FIELD_ORDER에서
+              const defaultHeaders = INTERFACE_FIELD_ORDER[currentInterface.id] || [];
+              const displayHeaders = data && data.length > 0 
+                ? getOrderedHeaders(currentInterface.id, Object.keys(data[0]), paramValues['I_ZPLDAYS'] ? parseInt(paramValues['I_ZPLDAYS'], 10) : undefined)
+                : getOrderedHeaders(currentInterface.id, defaultHeaders, paramValues['I_ZPLDAYS'] ? parseInt(paramValues['I_ZPLDAYS'], 10) : undefined);
+              
+              return (
+                <div className="bg-white rounded overflow-hidden border border-gray-200 shadow-sm">
+                  {/* 스크롤 네비게이션 바 */}
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 border-b border-gray-200">
+                    <span className="text-xs text-gray-500">{lang === 'ko' ? '컬럼:' : 'Cols:'}</span>
+                    <span className="text-xs font-medium text-gray-700">{displayHeaders.length}</span>
+                    <span className="text-gray-300">|</span>
+                    <span className="text-xs text-gray-500">{lang === 'ko' ? '← → 키로 스크롤' : '← → to scroll'}</span>
+                    <div className="flex-1" />
+                    {(!data || data.length === 0) && (
+                      <span className="text-xs text-orange-500 font-medium animate-pulse">
+                        {lang === 'ko' ? '조회 대기중...' : 'Awaiting query...'}
+                      </span>
+                    )}
+                    <button 
+                      onClick={() => { const el = document.getElementById('data-table'); if(el) el.scrollLeft = 0; }}
+                      className="px-2 py-0.5 text-xs bg-gray-200 hover:bg-gray-300 rounded"
+                    >{lang === 'ko' ? '◀ 처음' : '◀ First'}</button>
+                    <button 
+                      onClick={() => { const el = document.getElementById('data-table'); if(el) el.scrollLeft = el.scrollWidth; }}
+                      className="px-2 py-0.5 text-xs bg-gray-200 hover:bg-gray-300 rounded"
+                    >{lang === 'ko' ? '끝 ▶' : 'End ▶'}</button>
+                  </div>
+                  <div id="data-table" className="overflow-x-auto overflow-y-auto flex-1" style={{scrollbarWidth: 'auto', scrollbarColor: '#94a3b8 #e2e8f0', height: 'calc(100vh - 200px)'}}>
+                    <table className="w-full text-xs">
+                      <thead className="sticky top-0 z-10">
+                        <tr className="bg-gray-100">
+                          <th className="px-2 py-1.5 text-left font-medium text-gray-600 border-b border-gray-200 bg-gray-100 sticky left-0 z-20">#</th>
+                          {displayHeaders.map((key) => (
+                            <th 
+                                key={key} 
+                                className="px-2 py-1.5 text-left font-medium text-gray-600 border-b border-gray-200 whitespace-nowrap cursor-pointer hover:bg-gray-100"
+                                onClick={() => handleSort(key)}
+                              >
+                                {getFieldLabel(key, lang)}
+                                {sortKey === key && (sortOrder === 'asc' ? ' ▲' : ' ▼')}
+                              </th>
                           ))}
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {data && data.length > 0 ? (
+                          (sortedData || []).map((row, idx) => (
+                            <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                              <td className="px-2 py-1 border-b border-gray-100 text-gray-500 bg-white sticky left-0 z-10">{idx + 1}</td>
+                              {displayHeaders.map((key, i) => (
+                                <td key={i} className="px-2 py-1 border-b border-gray-100 text-gray-800 whitespace-nowrap">
+                                  {convertCodeToLabel(key, row[key], activeTab, lang, activeTab === 'HMC' ? HMC_PLANTS : KMC_PLANTS)}
+                                </td>
+                              ))}
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={displayHeaders.length + 1} className="px-4 py-32 text-center text-gray-400">
+                              <div className="flex flex-col items-center gap-3">
+                                <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                <span className="text-base">{lang === 'ko' ? '조회 버튼을 클릭하세요' : 'Click Query button'}</span>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
 
           {/* 상태바 */}
           <div className="px-6 py-2 bg-white border-t border-gray-200 text-sm text-gray-500 flex justify-between items-center">
             <span>
-              {data ? (
-                <>Ready | Rows: {data.length} | Columns: {data.length > 0 ? Object.keys(data[0]).length : 0}</>
+              {data && data.length > 0 ? (
+                <>Ready | Rows: {data.length} | Columns: {Object.keys(data[0]).length}</>
               ) : (
-                <>Ready</>
+                <>Ready | Columns: {(INTERFACE_FIELD_ORDER[currentInterface.id] || []).length}</>
               )}
             </span>
             <span className="text-xs text-gray-400">Developed by Minho Kim</span>
