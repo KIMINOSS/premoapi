@@ -1,6 +1,29 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+
+// 입력 인터페이스 정의 (생성/조정 기능)
+const INPUT_INTERFACES: Record<string, {
+  type: 'create' | 'adjust';
+  fields: string[];
+  description: { ko: string; en: string };
+}> = {
+  'MMPM8009': {
+    type: 'create',
+    fields: ['ZASNNO', 'ZDEPDAT', 'ZDEPTIM', 'ZEARDAT', 'ZEARTIM', 'ZCARNO', 'ZDLRNAME', 'ZDLRMOBL', 'WERKS', 'MATNR', 'ZDLMENGE'],
+    description: { ko: 'ASN 출하 정보 생성', en: 'Create ASN Shipment' }
+  },
+  'MMPM8012': {
+    type: 'adjust',
+    fields: ['WERKS', 'MATNR', 'ZLABST_PHY', 'ZDIFF_QTY', 'ZPROD_QTY', 'ZDAMAGE_QTY', 'ZOTHER_QTY', 'ZREMARK'],
+    description: { ko: '유상사급 재고 실사/조정', en: 'Subcon Stock Adjustment' }
+  },
+  'MMPM8015': {
+    type: 'adjust',
+    fields: ['WERKS', 'MATNR', 'QTY_COUNT', 'QTY_ADJ', 'QTY_D1', 'QTY_D2', 'QTY_D3', 'QTY_D4'],
+    description: { ko: '위탁재고 실사/조정', en: 'VMI Stock Adjustment' }
+  }
+};
 
 // 인터페이스 설정 (API 호출용 메타데이터 - 백엔드 테스트 기준)
 const INTERFACE_CONFIG: Record<string, { docType: string; serial: string }> = {
@@ -818,6 +841,13 @@ export default function Dashboard() {
   const [lang, setLang] = useState<'ko' | 'en'>('ko');
   const [offlineSwitchCount, setOfflineSwitchCount] = useState(0);
   const [modeLockUntil, setModeLockUntil] = useState<number | null>(null);
+  
+  // 입력 모드 상태
+  const [isInputMode, setIsInputMode] = useState(false);
+  const [inputData, setInputData] = useState<Record<string, unknown>[]>([]);
+  const [submitLoading, setSubmitLoading] = useState(false);
+  const [submitResult, setSubmitResult] = useState<{ success: boolean; message: string } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const interfaces = activeTab === 'HMC' ? HMC_INTERFACES : KMC_INTERFACES;
   const currentInterface = interfaces[selectedIndex];
@@ -907,6 +937,166 @@ export default function Dashboard() {
     } finally {
       setTokenLoading(false);
     }
+  };
+
+  // 현재 인터페이스가 입력 인터페이스인지 확인
+  const isInputInterface = currentInterface && INPUT_INTERFACES[currentInterface.id];
+  const inputConfig = isInputInterface ? INPUT_INTERFACES[currentInterface.id] : null;
+
+  // 엑셀 파일 업로드 핸들러
+  const handleExcelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const XLSX = await import('xlsx');
+      const arrayBuffer = await file.arrayBuffer();
+      const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet) as Record<string, unknown>[];
+      
+      setInputData(jsonData);
+      setSubmitResult(null);
+      setError(null);
+    } catch (err) {
+      setError(lang === 'ko' ? '엑셀 파일 읽기 실패' : 'Failed to read Excel file');
+    }
+    
+    // 파일 입력 초기화
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // 입력 데이터 전송 핸들러
+  const handleSubmitInput = async () => {
+    if (!inputData || inputData.length === 0) {
+      setError(lang === 'ko' ? '전송할 데이터가 없습니다' : 'No data to submit');
+      return;
+    }
+
+    if (!liveMode) {
+      setError(lang === 'ko' ? 'LIVE 모드에서만 전송 가능합니다' : 'Only available in LIVE mode');
+      return;
+    }
+
+    setSubmitLoading(true);
+    setSubmitResult(null);
+    setError(null);
+
+    try {
+      let currentToken = tokens[activeTab];
+      if (!currentToken) {
+        const newTokens = await getAllTokens();
+        currentToken = newTokens[activeTab];
+        if (!currentToken) {
+          throw new Error(lang === 'ko' ? '토큰이 없습니다' : 'No token');
+        }
+      }
+
+      const config = INTERFACE_CONFIG[currentInterface.id];
+      const moduleCode = activeTab === 'HMC' ? 'MMH' : 'MMK';
+
+      // 입력 데이터를 API 형식으로 변환
+      const inDataJson: Record<string, unknown> = {
+        I_LIFNR: paramValues['I_LIFNR'] || 'RR4U',
+        I_WERKS: paramValues['I_WERKS'] || '',
+      };
+
+      if (currentInterface.id === 'MMPM8009') {
+        // ASN 생성: IT_IMPORT1 (헤더), IT_IMPORT2 (상세)
+        inDataJson['I_ZASNNO'] = paramValues['I_ZASNNO'] || '';
+        inDataJson['IT_IMPORT1'] = inputData.filter(row => row['ZASNNO']);
+        inDataJson['IT_IMPORT2'] = inputData.filter(row => row['ZASNSEQ']);
+      } else {
+        // 재고 조정: IN_LIST
+        if (currentInterface.id === 'MMPM8012') {
+          inDataJson['I_BUDAT'] = paramValues['I_BUDAT'] || '';
+        } else if (currentInterface.id === 'MMPM8015') {
+          inDataJson['I_BASEDT'] = paramValues['I_BASEDT'] || '';
+        }
+        inDataJson['IN_LIST'] = inputData;
+      }
+
+      const payload = {
+        COMPANY: activeTab === 'HMC' ? 'HMC' : 'KIA',
+        SENDER: paramValues['I_LIFNR'] || 'RR4U',
+        RECORD_COUNT: String(inputData.length),
+        IFID: currentInterface.id,
+        SERVICE_CODE: `${paramValues['I_LIFNR'] || 'RR4U'}-${moduleCode}-B-${config.serial}`,
+        DOCUMENTTYPE: config.docType,
+        TARGET_SYSTEM: 'ERPMM',
+        INDATA_JSON: JSON.stringify(inDataJson)
+      };
+
+      const response = await fetch('/api/call', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ company: activeTab, token: currentToken, payload })
+      });
+
+      const json = await response.json();
+
+      if (json.E_IFRESULT === 'S' || json.E_IFRESULT === 'Z') {
+        setSubmitResult({
+          success: true,
+          message: json.E_IFMSG || (lang === 'ko' ? '전송 성공' : 'Submit successful')
+        });
+        setInputData([]);
+      } else {
+        setSubmitResult({
+          success: false,
+          message: json.E_IFMSG || (lang === 'ko' ? '전송 실패' : 'Submit failed')
+        });
+      }
+    } catch (err) {
+      setSubmitResult({
+        success: false,
+        message: err instanceof Error ? err.message : (lang === 'ko' ? '오류 발생' : 'Error occurred')
+      });
+    } finally {
+      setSubmitLoading(false);
+    }
+  };
+
+  // 입력 데이터 행 추가
+  const handleAddInputRow = () => {
+    if (!inputConfig) return;
+    const newRow: Record<string, unknown> = {};
+    inputConfig.fields.forEach(field => {
+      newRow[field] = '';
+    });
+    setInputData([...inputData, newRow]);
+  };
+
+  // 입력 데이터 행 삭제
+  const handleDeleteInputRow = (index: number) => {
+    setInputData(inputData.filter((_, i) => i !== index));
+  };
+
+  // 입력 데이터 셀 수정
+  const handleInputCellChange = (rowIndex: number, field: string, value: string) => {
+    const newData = [...inputData];
+    newData[rowIndex] = { ...newData[rowIndex], [field]: value };
+    setInputData(newData);
+  };
+
+  // 샘플 엑셀 다운로드
+  const handleDownloadTemplate = async () => {
+    if (!inputConfig) return;
+    
+    const XLSX = await import('xlsx');
+    const headers = inputConfig.fields;
+    const sampleData = [headers.reduce((acc, field) => {
+      acc[field] = '';
+      return acc;
+    }, {} as Record<string, string>)];
+    
+    const ws = XLSX.utils.json_to_sheet(sampleData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Template');
+    XLSX.writeFile(wb, `${currentInterface.id}_template.xlsx`);
   };
 
   const handleQuery = async () => {
@@ -1326,7 +1516,7 @@ export default function Dashboard() {
 
               <button
                 onClick={handleQuery}
-                disabled={loading}
+                disabled={loading || isInputMode}
                 className="flex items-center gap-1 px-2 py-1 bg-red-500 hover:bg-red-600 disabled:opacity-50 rounded text-xs text-white transition-colors"
               >
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1334,8 +1524,163 @@ export default function Dashboard() {
                 </svg>
                 {loading ? (lang === 'ko' ? '조회중' : 'Load') : (lang === 'ko' ? '조회' : 'Query')}
               </button>
+
+              {/* 입력 인터페이스인 경우 입력 모드 버튼 표시 */}
+              {isInputInterface && (
+                <>
+                  <button
+                    onClick={() => { setIsInputMode(!isInputMode); setInputData([]); setSubmitResult(null); }}
+                    className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors ${
+                      isInputMode 
+                        ? 'bg-orange-500 hover:bg-orange-600 text-white' 
+                        : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+                    }`}
+                  >
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    {isInputMode ? (lang === 'ko' ? '입력모드 ON' : 'Input ON') : (lang === 'ko' ? '입력' : 'Input')}
+                  </button>
+                </>
+              )}
             </div>
           </div>
+
+          {/* 입력 모드 UI */}
+          {isInputMode && inputConfig && (
+            <div className="px-4 py-3 bg-orange-50 border-b border-orange-200">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-orange-800">
+                    {inputConfig.description[lang]}
+                  </span>
+                  <span className="text-xs text-orange-600">
+                    ({inputData.length} {lang === 'ko' ? '건' : 'rows'})
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {/* 템플릿 다운로드 */}
+                  <button
+                    onClick={handleDownloadTemplate}
+                    className="flex items-center gap-1 px-2 py-1 bg-gray-200 hover:bg-gray-300 rounded text-xs text-gray-700"
+                  >
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    {lang === 'ko' ? '템플릿' : 'Template'}
+                  </button>
+                  
+                  {/* 엑셀 업로드 */}
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept=".xlsx,.xls"
+                    onChange={handleExcelUpload}
+                    className="hidden"
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center gap-1 px-2 py-1 bg-green-600 hover:bg-green-700 rounded text-xs text-white"
+                  >
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                    {lang === 'ko' ? '엑셀 업로드' : 'Upload Excel'}
+                  </button>
+
+                  {/* 행 추가 */}
+                  <button
+                    onClick={handleAddInputRow}
+                    className="flex items-center gap-1 px-2 py-1 bg-blue-500 hover:bg-blue-600 rounded text-xs text-white"
+                  >
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    {lang === 'ko' ? '행 추가' : 'Add Row'}
+                  </button>
+
+                  {/* 전송 */}
+                  <button
+                    onClick={handleSubmitInput}
+                    disabled={submitLoading || inputData.length === 0 || !liveMode}
+                    className="flex items-center gap-1 px-3 py-1 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 rounded text-xs text-white font-medium"
+                  >
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                    </svg>
+                    {submitLoading ? (lang === 'ko' ? '전송중...' : 'Sending...') : (lang === 'ko' ? '전송' : 'Submit')}
+                  </button>
+                </div>
+              </div>
+
+              {/* 전송 결과 메시지 */}
+              {submitResult && (
+                <div className={`px-3 py-2 rounded text-xs mb-2 ${
+                  submitResult.success 
+                    ? 'bg-green-100 text-green-700 border border-green-300' 
+                    : 'bg-red-100 text-red-700 border border-red-300'
+                }`}>
+                  {submitResult.message}
+                </div>
+              )}
+
+              {/* 입력 테이블 */}
+              {inputData.length > 0 && (
+                <div className="bg-white rounded border border-orange-200 overflow-x-auto max-h-48">
+                  <table className="w-full text-xs">
+                    <thead className="sticky top-0 bg-orange-100">
+                      <tr>
+                        <th className="px-2 py-1 text-left text-orange-800 border-b border-orange-200">#</th>
+                        {inputConfig.fields.map(field => (
+                          <th key={field} className="px-2 py-1 text-left text-orange-800 border-b border-orange-200 whitespace-nowrap">
+                            {getFieldLabel(field, lang)}
+                          </th>
+                        ))}
+                        <th className="px-2 py-1 text-center text-orange-800 border-b border-orange-200">
+                          {lang === 'ko' ? '삭제' : 'Del'}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {inputData.map((row, rowIndex) => (
+                        <tr key={rowIndex} className="hover:bg-orange-50">
+                          <td className="px-2 py-1 border-b border-orange-100 text-gray-500">{rowIndex + 1}</td>
+                          {inputConfig.fields.map(field => (
+                            <td key={field} className="px-1 py-0.5 border-b border-orange-100">
+                              <input
+                                type="text"
+                                value={String(row[field] || '')}
+                                onChange={(e) => handleInputCellChange(rowIndex, field, e.target.value)}
+                                className="w-full px-1 py-0.5 border border-gray-200 rounded text-xs focus:outline-none focus:border-orange-400"
+                              />
+                            </td>
+                          ))}
+                          <td className="px-2 py-1 border-b border-orange-100 text-center">
+                            <button
+                              onClick={() => handleDeleteInputRow(rowIndex)}
+                              className="text-red-500 hover:text-red-700"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {inputData.length === 0 && (
+                <div className="text-center py-4 text-orange-600 text-sm">
+                  {lang === 'ko' 
+                    ? '엑셀 파일을 업로드하거나 [행 추가] 버튼을 클릭하세요' 
+                    : 'Upload Excel file or click [Add Row] button'}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* 데이터 테이블 */}
           <div className="flex-1 overflow-auto p-6">
