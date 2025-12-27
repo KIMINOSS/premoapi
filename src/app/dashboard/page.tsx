@@ -634,7 +634,7 @@ export default function Dashboard() {
       else if (p === 'I_SPMON') newParams[p] = thisMonth;
       else if (DATE_PARAMS.includes(p)) newParams[p] = today;
       else if (p === 'I_WERKS') newParams[p] = '';
-      else if (p === 'I_ZPLDAYS') newParams[p] = '14';
+      else if (p === 'I_ZPLDAYS') newParams[p] = '150';
       else if (p === 'I_STATUS') newParams[p] = '';
       else newParams[p] = '';
     });
