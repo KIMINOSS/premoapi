@@ -565,11 +565,8 @@ const convertCodeToLabel = (key: string, value: any, company: 'HMC' | 'KMC', lan
   if (value === null || value === undefined || value === '') return '';
   const strValue = String(value);
   
-  // WERKS는 공장 목록에서 변환
-  if (key === 'WERKS') {
-    const plant = plants.find(p => p.code === strValue);
-    return plant ? plant.name[lang] : strValue;
-  }
+  // WERKS는 코드 그대로 표시 (ZPNTNM이 공장명)
+  // 변환 불필요
   
   // CODE_DEFINITIONS에 정의된 필드는 코드 변환
   if (CODE_DEFINITIONS[key]) {
