@@ -610,6 +610,71 @@ const CODE_DEFINITIONS: Record<string, Record<string, { ko: string; en: string }
     'X': { ko: '완료', en: 'Completed' },
     '': { ko: '미완료', en: 'Not Completed' },
   },
+  // 회사코드 (Company Code)
+  'BUKRS': {
+    '1000': { ko: '현대자동차', en: 'HMC' },
+    '2000': { ko: '기아', en: 'KMC' },
+    '3000': { ko: '현대모비스', en: 'Mobis' },
+    '4000': { ko: '현대위아', en: 'Wia' },
+    '5000': { ko: '현대트랜시스', en: 'Transys' },
+  },
+  // 차변/대변 (Debit/Credit)
+  'SHKZG': {
+    'S': { ko: '차변', en: 'Debit' },
+    'H': { ko: '대변', en: 'Credit' },
+  },
+  // 발주유형 (PO Type)
+  'BSART': {
+    'NB': { ko: '일반구매', en: 'Standard PO' },
+    'UB': { ko: '재고이전', en: 'Stock Transfer' },
+    'ZNBV': { ko: '벤더구매', en: 'Vendor PO' },
+    'ZNBS': { ko: '서열구매', en: 'Sequence PO' },
+    'ZNBD': { ko: '직송구매', en: 'Direct PO' },
+    'ZNBM': { ko: 'MITU구매', en: 'MITU PO' },
+    'ZNBP': { ko: 'PBS구매', en: 'PBS PO' },
+  },
+  // 중량단위 (Weight Unit)
+  'GEWEI': {
+    'G': { ko: 'g', en: 'g' },
+    'KG': { ko: 'Kg', en: 'KG' },
+    'TO': { ko: '톤', en: 'TON' },
+    'MG': { ko: 'mg', en: 'mg' },
+  },
+  // 차종코드 (Car Model)
+  'ZCCAR': {
+    'GL': { ko: '그랜저', en: 'Grandeur' },
+    'TM': { ko: '투싼', en: 'Tucson' },
+    'NE': { ko: '쏘나타', en: 'Sonata' },
+    'DN': { ko: '아반떼', en: 'Avante' },
+    'SU': { ko: '싼타페', en: 'Santa Fe' },
+    'OS': { ko: '팰리세이드', en: 'Palisade' },
+    'NX': { ko: '넥쏘', en: 'Nexo' },
+    'AE': { ko: '아이오닉', en: 'Ioniq' },
+    'JW': { ko: '코나', en: 'Kona' },
+    'BD': { ko: '스타리아', en: 'Staria' },
+    'MQ': { ko: 'K5', en: 'K5' },
+    'JF': { ko: 'K3', en: 'K3' },
+    'CK': { ko: 'K8', en: 'K8' },
+    'GL3': { ko: 'K9', en: 'K9' },
+    'YP': { ko: '쏘렌토', en: 'Sorento' },
+    'SP': { ko: '스포티지', en: 'Sportage' },
+    'MV': { ko: '카니발', en: 'Carnival' },
+    'EV6': { ko: 'EV6', en: 'EV6' },
+    'EV9': { ko: 'EV9', en: 'EV9' },
+  },
+  // 사유코드 (Reason Code)
+  'GRUND': {
+    '0001': { ko: '정상', en: 'Normal' },
+    '0002': { ko: '품질불량', en: 'Quality Issue' },
+    '0003': { ko: '수량과부족', en: 'Qty Discrepancy' },
+    '0004': { ko: '파손', en: 'Damaged' },
+    '0005': { ko: '오배송', en: 'Misdelivery' },
+    '0006': { ko: '지연', en: 'Delayed' },
+    '0010': { ko: '반품', en: 'Return' },
+    '0020': { ko: '폐기', en: 'Scrap' },
+    '0030': { ko: '재작업', en: 'Rework' },
+    '0099': { ko: '기타', en: 'Others' },
+  },
 };
 
 // 필드 라벨 가져오기
