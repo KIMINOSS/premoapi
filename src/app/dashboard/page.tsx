@@ -1242,11 +1242,27 @@ export default function Dashboard() {
 
             {!loading && data && data.length > 0 && (
               <div className="bg-white rounded overflow-hidden border border-gray-200 shadow-sm">
-                <div className="overflow-x-auto">
+                {/* 스크롤 네비게이션 바 */}
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 border-b border-gray-200">
+                  <span className="text-xs text-gray-500">컬럼:</span>
+                  <span className="text-xs font-medium text-gray-700">{data.length > 0 ? Object.keys(data[0]).length : 0}개</span>
+                  <span className="text-gray-300">|</span>
+                  <span className="text-xs text-gray-500">← → 키로 스크롤</span>
+                  <div className="flex-1" />
+                  <button 
+                    onClick={() => { const el = document.getElementById('data-table'); if(el) el.scrollLeft = 0; }}
+                    className="px-2 py-0.5 text-xs bg-gray-200 hover:bg-gray-300 rounded"
+                  >◀ 처음</button>
+                  <button 
+                    onClick={() => { const el = document.getElementById('data-table'); if(el) el.scrollLeft = el.scrollWidth; }}
+                    className="px-2 py-0.5 text-xs bg-gray-200 hover:bg-gray-300 rounded"
+                  >끝 ▶</button>
+                </div>
+                <div id="data-table" className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-320px)]" style={{scrollbarWidth: 'auto', scrollbarColor: '#94a3b8 #e2e8f0'}}>
                   <table className="w-full text-xs">
-                    <thead>
+                    <thead className="sticky top-0 z-10">
                       <tr className="bg-gray-100">
-                        <th className="px-2 py-1.5 text-left font-medium text-gray-600 border-b border-gray-200">#</th>
+                        <th className="px-2 py-1.5 text-left font-medium text-gray-600 border-b border-gray-200 bg-gray-100 sticky left-0 z-20">#</th>
                         {getOrderedHeaders(currentInterface.id, Object.keys(data[0])).map((key) => (
                           <th 
                               key={key} 
@@ -1262,7 +1278,7 @@ export default function Dashboard() {
                     <tbody>
                       {(sortedData || []).map((row, idx) => (
                         <tr key={idx} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-2 py-1 border-b border-gray-100 text-gray-500">{idx + 1}</td>
+                          <td className="px-2 py-1 border-b border-gray-100 text-gray-500 bg-white sticky left-0 z-10">{idx + 1}</td>
                           {getOrderedHeaders(currentInterface.id, Object.keys(row)).map((key, i) => (
                             <td key={i} className="px-2 py-1 border-b border-gray-100 text-gray-800 whitespace-nowrap">
                               {convertCodeToLabel(key, row[key], activeTab, lang, activeTab === 'HMC' ? HMC_PLANTS : KMC_PLANTS)}
