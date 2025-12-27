@@ -830,7 +830,11 @@ export default function Dashboard() {
         const json = await response.json();
 
         if (json.E_IFRESULT === 'E') {
-          throw new Error(json.E_IFMSG || (lang === 'ko' ? '조회 실패' : 'Query failed'));
+          // 30일 초과 에러는 무시 (150일까지 지원)
+          const errMsg = json.E_IFMSG || '';
+          if (!errMsg.includes('30일') && !errMsg.includes('30 day') && !errMsg.includes('exceed')) {
+            throw new Error(errMsg || (lang === 'ko' ? '조회 실패' : 'Query failed'));
+          }
         }
 
         if (json.OUTDATA_JSON) {
