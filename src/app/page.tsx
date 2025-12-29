@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 export default function Login() {
   const router = useRouter();
@@ -101,7 +102,7 @@ export default function Login() {
       {/* 로그인 카드 */}
       <div className="bg-white p-8 rounded-xl shadow-lg w-96">
         <div className="text-center mb-8">
-          <img src="https://grupopremo.com/cdn/shop/files/logo_christmas_2_770x255.gif?v=1765881926" alt="PREMO" className="h-12 mx-auto mb-4" />
+          <Image src="https://grupopremo.com/cdn/shop/files/logo_christmas_2_770x255.gif?v=1765881926" alt="PREMO" width={180} height={48} className="h-12 w-auto mx-auto mb-4" unoptimized />
           <h1 className="text-2xl font-bold text-gray-800">PREMO KOR.</h1>
           <p className="text-sm font-bold text-gray-600 mt-2">HKMC MM Module API Caller</p>
           <span className="inline-block mt-2 px-3 py-1 bg-yellow-400 text-yellow-900 text-xs font-bold rounded">TEST BUILD</span>
