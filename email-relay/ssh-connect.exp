@@ -1,0 +1,30 @@
+#!/usr/bin/expect -f
+set timeout 30
+set host "192.168.8.231"
+set user "mino"
+set password "***REMOVED***"
+
+spawn ssh -o StrictHostKeyChecking=no $user@$host
+
+expect {
+    "password:" {
+        send "$password\r"
+        expect {
+            "$ " {
+                send "hostname && uname -a\r"
+                expect "$ "
+                send "exit\r"
+            }
+            "Permission denied" {
+                puts "인증 실패"
+                exit 1
+            }
+        }
+    }
+    timeout {
+        puts "연결 시간 초과"
+        exit 1
+    }
+}
+
+expect eof

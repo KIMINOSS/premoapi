@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PREMO AI 대화 시스템</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        header {
+            text-align: center;
+            padding: 30px 0;
+            margin-bottom: 30px;
+        }
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gradient 3s ease infinite;
+        }
+        @keyframes gradient {
+            0%, 100% { filter: hue-rotate(0deg); }
+            50% { filter: hue-rotate(30deg); }
+        }
+        .subtitle { color: #a0a0c0; font-size: 1.1rem; }
+        .status-bar {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255,255,255,0.1);
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 0.9rem;
+        }
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        .status-online { background: #00ff88; box-shadow: 0 0 10px #00ff88; }
+        .status-offline { background: #ff4757; }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+        }
+        .chat-container {
+            background: rgba(255,255,255,0.05);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            overflow: hidden;
+        }
+        .chat-header {
+            background: rgba(0,0,0,0.3);
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .ai-avatars { display: flex; gap: -10px; }
+        .avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            border: 3px solid #302b63;
+        }
+        .claude-avatar { background: linear-gradient(135deg, #667eea, #764ba2); }
+        .gemini-avatar { background: linear-gradient(135deg, #00b894, #00cec9); margin-left: -15px; }
+        .chat-title h2 { font-size: 1.4rem; margin-bottom: 5px; }
+        .chat-title p { color: #a0a0c0; font-size: 0.9rem; }
+        .chat-messages {
+            height: 450px;
+            overflow-y: auto;
+            padding: 20px;
+            scroll-behavior: smooth;
+        }
+        .chat-messages::-webkit-scrollbar { width: 6px; }
+        .chat-messages::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        .chat-messages::-webkit-scrollbar-thumb { background: #667eea; border-radius: 3px; }
+        .message {
+            margin-bottom: 20px;
+            animation: slideIn 0.3s ease;
+            max-width: 85%;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .message-user { margin-left: auto; }
+        .message-claude { margin-right: auto; }
+        .message-gemini { margin-right: auto; }
+        .message-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            font-size: 0.85rem;
+        }
+        .message-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+        }
+        .message-name { font-weight: 600; }
+        .message-time { color: #a0a0c0; font-size: 0.75rem; }
+        .message-content {
+            padding: 15px 20px;
+            border-radius: 18px;
+            line-height: 1.6;
+            word-wrap: break-word;
+        }
+        .message-user .message-content {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-bottom-right-radius: 5px;
+        }
+        .message-user .message-header { justify-content: flex-end; }
+        .message-claude .message-content {
+            background: linear-gradient(135deg, #5f27cd, #341f97);
+            border-bottom-left-radius: 5px;
+        }
+        .message-gemini .message-content {
+            background: linear-gradient(135deg, #00b894, #00a085);
+            border-bottom-left-radius: 5px;
+        }
+        .typing-indicator {
+            display: none;
+            padding: 15px 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 18px;
+            max-width: 100px;
+        }
+        .typing-dots {
+            display: flex;
+            gap: 5px;
+        }
+        .typing-dots span {
+            width: 8px;
+            height: 8px;
+            background: #a0a0c0;
+            border-radius: 50%;
+            animation: typingBounce 1.4s infinite ease-in-out;
+        }
+        .typing-dots span:nth-child(1) { animation-delay: 0s; }
+        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typingBounce {
+            0%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-8px); }
+        }
+        .chat-input-area {
+            padding: 20px;
+            background: rgba(0,0,0,0.2);
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .input-container {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .chat-input {
+            flex: 1;
+            padding: 15px 20px;
+            border: none;
+            border-radius: 25px;
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s;
+        }
+        .chat-input::placeholder { color: rgba(255,255,255,0.5); }
+        .chat-input:focus { background: rgba(255,255,255,0.15); box-shadow: 0 0 20px rgba(102, 126, 234, 0.3); }
+        .btn {
+            padding: 15px 25px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-send {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff;
+        }
+        .btn-send:hover { transform: scale(1.05); box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4); }
+        .btn-clear {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+        .btn-clear:hover { background: rgba(255,77,77,0.3); }
+        .quick-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        .quick-btn {
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            color: #fff;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .quick-btn:hover { background: rgba(102, 126, 234, 0.3); border-color: #667eea; }
+        footer {
+            text-align: center;
+            padding: 30px;
+            color: #a0a0c0;
+            font-size: 0.9rem;
+        }
+        footer a { color: #667eea; text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>PREMO AI Collaboration</h1>
+            <p class="subtitle">Claude + Gemini 실시간 협업 시스템</p>
+        </header>
+
+        <div class="status-bar">
+            <div class="status-item">
+                <span class="status-dot status-online"></span>
+                <span>Claude Code</span>
+            </div>
+            <div class="status-item">
+                <span class="status-dot" id="gemini-status"></span>
+                <span>Gemini 2.0 Flash</span>
+            </div>
+            <div class="status-item">
+                <span class="status-dot status-online"></span>
+                <span>n8n @ 192.168.8.231</span>
+            </div>
+        </div>
+
+        <div class="chat-container">
+            <div class="chat-header">
+                <div class="ai-avatars">
+                    <div class="avatar claude-avatar">C</div>
+                    <div class="avatar gemini-avatar">G</div>
+                </div>
+                <div class="chat-title">
+                    <h2>AI 협업 대화</h2>
+                    <p>두 AI가 함께 분석하고 답변합니다</p>
+                </div>
+            </div>
+
+            <div class="chat-messages" id="chat-messages"></div>
+
+            <div class="chat-input-area">
+                <div class="input-container">
+                    <input type="text" class="chat-input" id="chat-input" placeholder="메시지를 입력하세요..." autocomplete="off">
+                    <button class="btn btn-send" id="send-btn">전송</button>
+                    <button class="btn btn-clear" id="clear-btn">초기화</button>
+                </div>
+                <div class="quick-actions">
+                    <button class="quick-btn" data-msg="시스템 상태를 점검해줘">시스템 점검</button>
+                    <button class="quick-btn" data-msg="이메일 릴레이 설정 방법 알려줘">이메일 릴레이</button>
+                    <button class="quick-btn" data-msg="n8n 워크플로우 생성 방법">n8n 가이드</button>
+                    <button class="quick-btn" data-msg="현재 프로젝트 구조 설명해줘">프로젝트 구조</button>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>PREMO Email Relay System v1.0 | <a href="http://192.168.8.231:5678" target="_blank">n8n 열기</a></p>
+        </footer>
+    </div>
+
+    <script>
+        const API_BASE = '';
+        const chatMessages = document.getElementById('chat-messages');
+        const chatInput = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-btn');
+        const clearBtn = document.getElementById('clear-btn');
+        const geminiStatus = document.getElementById('gemini-status');
+
+        function formatTime(date) {
+            return date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function createMessageElement(role, content, time) {
+            const div = document.createElement('div');
+            div.className = 'message message-' + role;
+
+            const header = document.createElement('div');
+            header.className = 'message-header';
+
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+
+            const name = document.createElement('span');
+            name.className = 'message-name';
+
+            const timeSpan = document.createElement('span');
+            timeSpan.className = 'message-time';
+            timeSpan.textContent = time || formatTime(new Date());
+
+            if (role === 'user') {
+                avatar.style.background = 'linear-gradient(135deg, #667eea, #764ba2)';
+                avatar.textContent = 'U';
+                name.textContent = '사용자';
+            } else if (role === 'claude') {
+                avatar.style.background = 'linear-gradient(135deg, #5f27cd, #341f97)';
+                avatar.textContent = 'C';
+                name.textContent = 'Claude';
+            } else if (role === 'gemini') {
+                avatar.style.background = 'linear-gradient(135deg, #00b894, #00a085)';
+                avatar.textContent = 'G';
+                name.textContent = 'Gemini';
+            }
+
+            header.appendChild(avatar);
+            header.appendChild(name);
+            header.appendChild(timeSpan);
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.textContent = content;
+
+            div.appendChild(header);
+            div.appendChild(contentDiv);
+
+            return div;
+        }
+
+        function createTypingIndicator() {
+            const typing = document.createElement('div');
+            typing.className = 'typing-indicator';
+            typing.id = 'typing';
+
+            const dotsContainer = document.createElement('div');
+            dotsContainer.className = 'typing-dots';
+
+            for (let i = 0; i < 3; i++) {
+                const dot = document.createElement('span');
+                dotsContainer.appendChild(dot);
+            }
+
+            typing.appendChild(dotsContainer);
+            return typing;
+        }
+
+        function addMessage(role, content, time) {
+            const msgElement = createMessageElement(role, content, time);
+            chatMessages.appendChild(msgElement);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function showTyping() {
+            const typing = createTypingIndicator();
+            chatMessages.appendChild(typing);
+            typing.style.display = 'block';
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function hideTyping() {
+            const typing = document.getElementById('typing');
+            if (typing) typing.remove();
+        }
+
+        async function sendMessage() {
+            const text = chatInput.value.trim();
+            if (!text) return;
+
+            addMessage('user', text);
+            chatInput.value = '';
+            showTyping();
+
+            try {
+                const response = await fetch(API_BASE + '/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: text })
+                });
+
+                hideTyping();
+
+                if (response.ok) {
+                    const data = await response.json();
+                    geminiStatus.className = 'status-dot status-online';
+                    addMessage('gemini', data.gemini_response);
+                } else {
+                    geminiStatus.className = 'status-dot status-offline';
+                    addMessage('gemini', '응답을 받지 못했습니다. 서버 상태를 확인해주세요.');
+                }
+            } catch (error) {
+                hideTyping();
+                geminiStatus.className = 'status-dot status-offline';
+                addMessage('gemini', '서버 연결에 실패했습니다: ' + error.message);
+            }
+        }
+
+        async function clearChat() {
+            try {
+                await fetch(API_BASE + '/api/clear', { method: 'POST' });
+            } catch (e) {}
+            while (chatMessages.firstChild) {
+                chatMessages.removeChild(chatMessages.firstChild);
+            }
+            addMessage('claude', '대화가 초기화되었습니다. 무엇을 도와드릴까요?');
+        }
+
+        async function checkStatus() {
+            try {
+                const response = await fetch(API_BASE + '/api/status');
+                if (response.ok) {
+                    geminiStatus.className = 'status-dot status-online';
+                } else {
+                    geminiStatus.className = 'status-dot status-offline';
+                }
+            } catch (e) {
+                geminiStatus.className = 'status-dot status-offline';
+            }
+        }
+
+        sendBtn.addEventListener('click', sendMessage);
+        clearBtn.addEventListener('click', clearChat);
+        chatInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        document.querySelectorAll('.quick-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                chatInput.value = this.dataset.msg;
+                sendMessage();
+            });
+        });
+
+        addMessage('claude', '안녕하세요! PREMO AI 협업 시스템입니다. Claude와 Gemini가 함께 도와드립니다.');
+        addMessage('gemini', '저도 준비되었습니다. 이메일 릴레이, n8n 워크플로우, 시스템 점검 등 무엇이든 물어보세요.');
+        checkStatus();
+        setInterval(checkStatus, 30000);
+    </script>
+</body>
+</html>

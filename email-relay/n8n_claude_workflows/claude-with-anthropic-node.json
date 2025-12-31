@@ -1,0 +1,68 @@
+{
+  "name": "Claude API - Anthropic Node",
+  "nodes": [
+    {
+      "id": "webhook-1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "claude-anthropic",
+      "parameters": {
+        "path": "claude-anthropic",
+        "httpMethod": "POST",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "anthropic-1",
+      "name": "Anthropic",
+      "type": "@n8n/n8n-nodes-langchain.anthropic",
+      "typeVersion": 1.2,
+      "position": [500, 300],
+      "parameters": {
+        "resource": "chat",
+        "operation": "message",
+        "model": "claude-sonnet-4-20250514",
+        "prompt": "={{ $json.body.message }}",
+        "options": {
+          "maxTokens": 1024,
+          "temperature": 0.7
+        }
+      },
+      "credentials": {
+        "anthropicApi": {
+          "id": "CREDENTIAL_ID_HERE",
+          "name": "Anthropic API"
+        }
+      }
+    },
+    {
+      "id": "respond-1",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [750, 300],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[{"node": "Anthropic", "type": "main", "index": 0}]]
+    },
+    "Anthropic": {
+      "main": [[{"node": "Respond", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "pinData": {},
+  "_comment": "이 워크플로우는 Anthropic 노드를 사용합니다. n8n UI에서 Anthropic Credentials를 먼저 설정한 후 CREDENTIAL_ID_HERE를 실제 ID로 교체하세요."
+}

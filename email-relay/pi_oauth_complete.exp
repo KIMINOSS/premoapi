@@ -1,0 +1,103 @@
+#!/usr/bin/expect -f
+# 라즈베리파이 Google OAuth 완료 스크립트
+# 인증 코드를 인자로 받아서 전송
+
+set timeout 60
+set host "192.168.8.231"
+set user "mino"
+set password "***REMOVED***"
+set auth_code [lindex $argv 0]
+
+if {$auth_code eq ""} {
+    puts "사용법: ./pi_oauth_complete.exp <인증코드>"
+    exit 1
+}
+
+puts "============================================================"
+puts "  라즈베리파이 Google OAuth 인증"
+puts "============================================================"
+puts ""
+
+# SSH 연결
+puts "\[1/3\] SSH 연결 중..."
+spawn ssh -o StrictHostKeyChecking=no $user@$host
+
+expect {
+    "password:" {
+        send "$password\r"
+    }
+    timeout {
+        puts "SSH 연결 시간 초과"
+        exit 1
+    }
+}
+
+expect {
+    "$ " {
+        puts "      연결 성공!"
+    }
+    "Permission denied" {
+        puts "SSH 인증 실패"
+        exit 1
+    }
+}
+
+# gcloud auth 실행
+puts ""
+puts "\[2/3\] OAuth 인증 실행 중..."
+send "~/google-cloud-sdk/bin/gcloud auth application-default login --no-launch-browser\r"
+
+# URL 출력 대기
+expect {
+    -re {(https://accounts\.google\.com/o/oauth2/auth\?[^\s\r\n]+)} {
+        set auth_url $expect_out(1,string)
+        puts ""
+        puts "OAuth URL:"
+        puts $auth_url
+        puts ""
+    }
+    timeout {
+        puts "OAuth URL 생성 시간 초과"
+        exit 1
+    }
+}
+
+# 코드 입력 대기
+expect {
+    -re {(Enter|code|authorization):} {
+        puts "\[3/3\] 인증 코드 전송 중..."
+        send "$auth_code\r"
+    }
+    timeout {
+        # 프롬프트가 다를 수 있음 - 직접 코드 전송
+        puts "\[3/3\] 인증 코드 전송 중..."
+        send "$auth_code\r"
+    }
+}
+
+# 결과 대기
+expect {
+    "Credentials saved" {
+        puts ""
+        puts "============================================================"
+        puts "  ✓ OAuth 인증 성공!"
+        puts "============================================================"
+    }
+    "invalid" {
+        puts ""
+        puts "인증 실패: 유효하지 않은 코드"
+        exit 1
+    }
+    timeout {
+        puts ""
+        puts "결과 대기 시간 초과"
+    }
+}
+
+# 종료
+expect "$ "
+send "exit\r"
+expect eof
+
+puts ""
+puts "완료!"

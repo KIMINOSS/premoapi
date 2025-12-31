@@ -1,0 +1,133 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "2.0.0.0",
+  "parameters": {
+    "$connections": {
+      "defaultValue": {},
+      "type": "Object"
+    }
+  },
+  "triggers": {
+    "When_a_new_email_arrives_from_Resend": {
+      "type": "ApiConnection",
+      "inputs": {
+        "host": {
+          "connection": {
+            "name": "@parameters('$connections')['gmail']['connectionId']"
+          }
+        },
+        "method": "get",
+        "path": "/Mail/OnNewEmail",
+        "queries": {
+          "from": "onboarding@resend.dev",
+          "label": "INBOX"
+        }
+      },
+      "recurrence": {
+        "frequency": "Minute",
+        "interval": 1
+      },
+      "description": "Resend에서 발송된 인증 이메일 감지"
+    }
+  },
+  "actions": {
+    "Check_TO_Tag_in_Subject": {
+      "type": "If",
+      "expression": {
+        "and": [
+          {
+            "contains": [
+              "@triggerOutputs()?['body/Subject']",
+              "[TO:"
+            ]
+          }
+        ]
+      },
+      "actions": {
+        "Extract_Recipient_Email": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "ActualRecipient",
+                "type": "string",
+                "value": "@{substring(triggerOutputs()?['body/Subject'], add(indexOf(triggerOutputs()?['body/Subject'], '[TO:'), 4), sub(indexOf(triggerOutputs()?['body/Subject'], ']'), add(indexOf(triggerOutputs()?['body/Subject'], '[TO:'), 4)))}"
+              }
+            ]
+          },
+          "runAfter": {},
+          "description": "Subject에서 [TO:email@domain.com] 추출"
+        },
+        "Extract_Clean_Subject": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "CleanSubject",
+                "type": "string",
+                "value": "@{trim(substring(triggerOutputs()?['body/Subject'], add(indexOf(triggerOutputs()?['body/Subject'], ']'), 2)))}"
+              }
+            ]
+          },
+          "runAfter": {
+            "Extract_Recipient_Email": ["Succeeded"]
+          },
+          "description": "[TO:...] 태그 제거한 실제 제목"
+        },
+        "Send_Auth_Email_via_Outlook": {
+          "type": "ApiConnection",
+          "inputs": {
+            "host": {
+              "connection": {
+                "name": "@parameters('$connections')['office365']['connectionId']"
+              }
+            },
+            "method": "post",
+            "path": "/v2/Mail",
+            "body": {
+              "To": "@variables('ActualRecipient')",
+              "Subject": "@variables('CleanSubject')",
+              "Body": "<p>@{triggerOutputs()?['body/Body']}</p>",
+              "From": "minho.kim@grupopremo.com",
+              "Importance": "High"
+            }
+          },
+          "runAfter": {
+            "Extract_Clean_Subject": ["Succeeded"]
+          },
+          "description": "Outlook을 통해 실제 사용자에게 인증 메일 발송"
+        },
+        "Log_Success": {
+          "type": "Compose",
+          "inputs": {
+            "status": "success",
+            "recipient": "@variables('ActualRecipient')",
+            "subject": "@variables('CleanSubject')",
+            "timestamp": "@utcNow()"
+          },
+          "runAfter": {
+            "Send_Auth_Email_via_Outlook": ["Succeeded"]
+          },
+          "description": "발송 성공 로그"
+        }
+      },
+      "else": {
+        "actions": {
+          "Log_Skipped": {
+            "type": "Compose",
+            "inputs": {
+              "status": "skipped",
+              "reason": "No [TO:] tag found in subject",
+              "originalSubject": "@triggerOutputs()?['body/Subject']",
+              "timestamp": "@utcNow()"
+            },
+            "description": "[TO:] 태그 없는 이메일 - 무시"
+          }
+        }
+      },
+      "runAfter": {},
+      "description": "Subject에 [TO:] 태그가 있는지 확인"
+    }
+  },
+  "outputs": {}
+}

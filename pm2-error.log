@@ -1,0 +1,719 @@
+ ⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of /home/kogh/package-lock.json as the root directory.
+ To silence this warning, set `outputFileTracingRoot` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/output#caveats for more information.
+ Detected additional lockfiles: 
+   * /home/kogh/mino/premoapi/package-lock.json
+
+ ⚠ Port 3000 is in use by an unknown process, using available port 3003 instead.
+Missing credentials for HMC: clientId=false, secretKey=false
+Missing credentials for KMC: clientId=false, secretKey=false
+Missing credentials for HMC: clientId=false, secretKey=false
+Missing credentials for KMC: clientId=false, secretKey=false
+ ⚠ Cross origin request detected from 172.21.136.1 to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+Missing credentials for HMC: clientId=false, secretKey=false
+Missing credentials for KMC: clientId=false, secretKey=false
+Missing credentials for KMC: clientId=false, secretKey=false
+Missing credentials for HMC: clientId=false, secretKey=false
+ ⨯ ./src/app/login/page.tsx
+Error:   [31mx[0m Expression expected
+     ,-[[36;1;4m/home/kogh/mino/premoapi/src/app/login/page.tsx[0m:246:1]
+ [2m243[0m |                   required
+ [2m244[0m |                   autoComplete="email"
+ [2m245[0m |                   className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+ [2m246[0m |                 />
+     : [35;1m                 ^[0m
+ [2m247[0m |                 <svg
+ [2m248[0m |                   className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500"
+ [2m249[0m |                   fill="none"
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/login/page.tsx
+ ⨯ ./src/app/login/page.tsx
+Error:   [31mx[0m Expression expected
+     ,-[[36;1;4m/home/kogh/mino/premoapi/src/app/login/page.tsx[0m:247:1]
+ [2m244[0m |                   required
+ [2m245[0m |                   autoComplete="email"
+ [2m246[0m |                   className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+ [2m247[0m |                 />
+     : [35;1m                 ^[0m
+ [2m248[0m |                 <svg
+ [2m249[0m |                   className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500"
+ [2m250[0m |                   fill="none"
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/login/page.tsx
+ ⨯ ./src/app/login/page.tsx
+Error:   [31mx[0m Expression expected
+     ,-[[36;1;4m/home/kogh/mino/premoapi/src/app/login/page.tsx[0m:247:1]
+ [2m244[0m |                   required
+ [2m245[0m |                   autoComplete="email"
+ [2m246[0m |                   className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+ [2m247[0m |                 />
+     : [35;1m                 ^[0m
+ [2m248[0m |                 <svg
+ [2m249[0m |                   className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500"
+ [2m250[0m |                   fill="none"
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/login/page.tsx
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/home/kogh/mino/premoapi/.next/cache/webpack/client-development-fallback/0.pack.gz_' -> '/home/kogh/mino/premoapi/.next/cache/webpack/client-development-fallback/0.pack.gz'
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/home/kogh/mino/premoapi/.next/cache/webpack/client-development-fallback/0.pack.gz_' -> '/home/kogh/mino/premoapi/.next/cache/webpack/client-development-fallback/0.pack.gz'
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+Missing credentials for KMC: clientId=false, secretKey=false
+Missing credentials for HMC: clientId=false, secretKey=false
+Missing credentials for HMC: clientId=false, secretKey=false
+Missing credentials for KMC: clientId=false, secretKey=false
+ ⨯ ./src/app/login/page.tsx
+Error:   [31mx[0m Expression expected
+     ,-[[36;1;4m/home/kogh/mino/premoapi/src/app/login/page.tsx[0m:172:1]
+ [2m169[0m |                     required
+ [2m170[0m |                     autoComplete="email"
+ [2m171[0m |                     className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+ [2m172[0m |                   />
+     : [35;1m                   ^[0m
+ [2m173[0m |                   <svg
+ [2m174[0m |                     className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
+ [2m175[0m |                     fill="none"
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/login/page.tsx
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⨯ ./src/app/login/page.tsx
+Error:   [31mx[0m Expression expected
+     ,-[[36;1;4m/home/kogh/mino/premoapi/src/app/login/page.tsx[0m:172:1]
+ [2m169[0m |                     required
+ [2m170[0m |                     autoComplete="email"
+ [2m171[0m |                     className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+ [2m172[0m |                   />
+     : [35;1m                   ^[0m
+ [2m173[0m |                   <svg
+ [2m174[0m |                     className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
+ [2m175[0m |                     fill="none"
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/login/page.tsx
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⨯ ./src/app/login/page.tsx
+Error:   [31mx[0m Expression expected
+     ,-[[36;1;4m/home/kogh/mino/premoapi/src/app/login/page.tsx[0m:172:1]
+ [2m169[0m |                     required
+ [2m170[0m |                     autoComplete="email"
+ [2m171[0m |                     className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+ [2m172[0m |                   />
+     : [35;1m                   ^[0m
+ [2m173[0m |                   <svg
+ [2m174[0m |                     className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
+ [2m175[0m |                     fill="none"
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/login/page.tsx
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⨯ ./src/app/login/page.tsx
+Error:   [31mx[0m Expression expected
+     ,-[[36;1;4m/home/kogh/mino/premoapi/src/app/login/page.tsx[0m:172:1]
+ [2m169[0m |                     required
+ [2m170[0m |                     autoComplete="email"
+ [2m171[0m |                     className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+ [2m172[0m |                   />
+     : [35;1m                   ^[0m
+ [2m173[0m |                   <svg
+ [2m174[0m |                     className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
+ [2m175[0m |                     fill="none"
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/login/page.tsx
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⨯ ./src/app/login/page.tsx
+Error:   [31mx[0m Expression expected
+     ,-[[36;1;4m/home/kogh/mino/premoapi/src/app/login/page.tsx[0m:172:1]
+ [2m169[0m |                     required
+ [2m170[0m |                     autoComplete="email"
+ [2m171[0m |                     className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+ [2m172[0m |                   />
+     : [35;1m                   ^[0m
+ [2m173[0m |                   <svg
+ [2m174[0m |                     className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
+ [2m175[0m |                     fill="none"
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/login/page.tsx
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⨯ ./src/app/register/page.tsx
+Error:   [31mx[0m Expression expected
+     ,-[[36;1;4m/home/kogh/mino/premoapi/src/app/register/page.tsx[0m:140:1]
+ [2m137[0m |                 placeholder="name@grupopremo.com"
+ [2m138[0m |                 required
+ [2m139[0m |                 className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+ [2m140[0m |               />
+     : [35;1m               ^[0m
+ [2m141[0m |               <p className="text-xs text-slate-500 mt-1">@grupopremo.com 도메인만 가입 가능</p>
+ [2m142[0m |             </div>
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/register/page.tsx
+ ⨯ [Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⨯ ./src/app/register/page.tsx
+Error:   [31mx[0m Expression expected
+     ,-[[36;1;4m/home/kogh/mino/premoapi/src/app/register/page.tsx[0m:140:1]
+ [2m137[0m |                 placeholder="name@grupopremo.com"
+ [2m138[0m |                 required
+ [2m139[0m |                 className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+ [2m140[0m |               />
+     : [35;1m               ^[0m
+ [2m141[0m |               <p className="text-xs text-slate-500 mt-1">@grupopremo.com 도메인만 가입 가능</p>
+ [2m142[0m |             </div>
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/register/page.tsx
+ ⨯ ./src/app/register/page.tsx
+Error:   [31mx[0m Expression expected
+     ,-[[36;1;4m/home/kogh/mino/premoapi/src/app/register/page.tsx[0m:140:1]
+ [2m137[0m |                 placeholder="name@grupopremo.com"
+ [2m138[0m |                 required
+ [2m139[0m |                 className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+ [2m140[0m |               />
+     : [35;1m               ^[0m
+ [2m141[0m |               <p className="text-xs text-slate-500 mt-1">@grupopremo.com 도메인만 가입 가능</p>
+ [2m142[0m |             </div>
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/register/page.tsx
+ ⨯ [Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json',
+  page: '/login'
+}
+ ⨯ Error: Cannot find module './611.js'
+Require stack:
+- /home/kogh/mino/premoapi/.next/server/webpack-runtime.js
+- /home/kogh/mino/premoapi/.next/server/app/login/page.js
+- /home/kogh/mino/premoapi/node_modules/next/dist/server/require.js
+- /home/kogh/mino/premoapi/node_modules/next/dist/server/load-components.js
+- /home/kogh/mino/premoapi/node_modules/next/dist/build/utils.js
+- /home/kogh/mino/premoapi/node_modules/next/dist/build/swc/options.js
+- /home/kogh/mino/premoapi/node_modules/next/dist/build/swc/index.js
+- /home/kogh/mino/premoapi/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /home/kogh/mino/premoapi/node_modules/next/dist/server/config.js
+- /home/kogh/mino/premoapi/node_modules/next/dist/server/next.js
+- /home/kogh/mino/premoapi/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/pages/_document.js:1:321)
+    at Object.<anonymous> (.next/server/pages/_document.js:1:366) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+[Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json',
+  page: '/login'
+}
+ ⨯ Error: Cannot find module './611.js'
+Require stack:
+- /home/kogh/mino/premoapi/.next/server/webpack-runtime.js
+- /home/kogh/mino/premoapi/.next/server/app/login/page.js
+- /home/kogh/mino/premoapi/node_modules/next/dist/server/require.js
+- /home/kogh/mino/premoapi/node_modules/next/dist/server/load-components.js
+- /home/kogh/mino/premoapi/node_modules/next/dist/build/utils.js
+- /home/kogh/mino/premoapi/node_modules/next/dist/build/swc/options.js
+- /home/kogh/mino/premoapi/node_modules/next/dist/build/swc/index.js
+- /home/kogh/mino/premoapi/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /home/kogh/mino/premoapi/node_modules/next/dist/server/config.js
+- /home/kogh/mino/premoapi/node_modules/next/dist/server/next.js
+- /home/kogh/mino/premoapi/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/pages/_document.js:1:321)
+    at Object.<anonymous> (.next/server/pages/_document.js:1:366) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+[Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json',
+  page: '/'
+}
+ ⨯ Error: Cannot find module './611.js'
+Require stack:
+- /home/kogh/mino/premoapi/.next/server/webpack-runtime.js
+- /home/kogh/mino/premoapi/.next/server/app/page.js
+- /home/kogh/mino/premoapi/node_modules/next/dist/server/require.js
+- /home/kogh/mino/premoapi/node_modules/next/dist/server/load-components.js
+- /home/kogh/mino/premoapi/node_modules/next/dist/build/utils.js
+- /home/kogh/mino/premoapi/node_modules/next/dist/build/swc/options.js
+- /home/kogh/mino/premoapi/node_modules/next/dist/build/swc/index.js
+- /home/kogh/mino/premoapi/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /home/kogh/mino/premoapi/node_modules/next/dist/server/config.js
+- /home/kogh/mino/premoapi/node_modules/next/dist/server/next.js
+- /home/kogh/mino/premoapi/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/pages/_document.js:1:321)
+    at Object.<anonymous> (.next/server/pages/_document.js:1:366) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+[Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json',
+  page: '/'
+}
+ ⨯ Error: Cannot find module './611.js'
+Require stack:
+- /home/kogh/mino/premoapi/.next/server/webpack-runtime.js
+- /home/kogh/mino/premoapi/.next/server/app/page.js
+- /home/kogh/mino/premoapi/node_modules/next/dist/server/require.js
+- /home/kogh/mino/premoapi/node_modules/next/dist/server/load-components.js
+- /home/kogh/mino/premoapi/node_modules/next/dist/build/utils.js
+- /home/kogh/mino/premoapi/node_modules/next/dist/build/swc/options.js
+- /home/kogh/mino/premoapi/node_modules/next/dist/build/swc/index.js
+- /home/kogh/mino/premoapi/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /home/kogh/mino/premoapi/node_modules/next/dist/server/config.js
+- /home/kogh/mino/premoapi/node_modules/next/dist/server/next.js
+- /home/kogh/mino/premoapi/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/pages/_document.js:1:321)
+    at Object.<anonymous> (.next/server/pages/_document.js:1:366) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+[Error: ENOENT: no such file or directory, open '/home/kogh/mino/premoapi/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/kogh/mino/premoapi/.next/routes-manifest.json'
+}
+ ⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of /home/kogh/package-lock.json as the root directory.
+ To silence this warning, set `outputFileTracingRoot` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/output#caveats for more information.
+ Detected additional lockfiles: 
+   * /home/kogh/mino/premoapi/package-lock.json
+
+ ⚠ Port 3000 is in use by an unknown process, using available port 3003 instead.
+ ⚠ Cross origin request detected from 172.21.136.1 to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+Missing credentials for KMC: clientId=false, secretKey=false
+Missing credentials for HMC: clientId=false, secretKey=false
+Missing credentials for KMC: clientId=false, secretKey=false
+Missing credentials for HMC: clientId=false, secretKey=false
+Missing credentials for HMC: clientId=false, secretKey=false
+Missing credentials for KMC: clientId=false, secretKey=false
+Missing credentials for KMC: clientId=false, secretKey=false
+Missing credentials for HMC: clientId=false, secretKey=false
+Missing credentials for HMC: clientId=false, secretKey=false
+Missing credentials for KMC: clientId=false, secretKey=false
+Missing credentials for HMC: clientId=false, secretKey=false
+Missing credentials for KMC: clientId=false, secretKey=false

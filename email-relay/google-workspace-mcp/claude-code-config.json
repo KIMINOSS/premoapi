@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "google-workspace": {
+      "command": "/home/kogh/mino/premoapi/email-relay/google-workspace-mcp/.venv/bin/python",
+      "args": ["-m", "google_workspace_mcp.server"],
+      "cwd": "/home/kogh/mino/premoapi/email-relay/google-workspace-mcp"
+    }
+  }
+}
