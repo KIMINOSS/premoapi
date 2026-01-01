@@ -10,7 +10,7 @@ const CONFIG = {
   FLOW_NAME: 'PREMO-Email-Auth',
   RESEND_SENDER: 'onboarding@resend.dev',
   MS_EMAIL: 'minho.kim@grupopremo.com',
-  MS_PASSWORD: 'Alshtm***REMOVED***!@'
+  MS_PASSWORD: process.env.PA_PASSWORD
 };
 
 async function sleep(ms) {

@@ -2,7 +2,7 @@ const { chromium } = require('playwright');
 
 const CONFIG = {
   MS_EMAIL: 'minho.kim@grupopremo.com',
-  MS_PASSWORD: 'Alshtm***REMOVED***!@',
+  MS_PASSWORD: process.env.PA_PASSWORD,
   FLOW_NAME: 'PREMO-Email-Auth',
   RESEND_SENDER: 'onboarding@resend.dev'
 };

@@ -10,9 +10,26 @@ import { logAdminAction } from '@/app/api/_lib/admin-auth';
 // Edge Runtime
 export const runtime = 'edge';
 
-// 관리자 계정 (환경변수에서 로드, 프로덕션에서는 DB 사용 권장)
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@premo.kr';
-const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH;
+// 관리자 계정 (환경변수 필수)
+function getAdminEmail(): string {
+  const email = process.env.ADMIN_EMAIL;
+  if (!email) {
+    throw new Error('ADMIN_EMAIL 환경변수가 설정되지 않았습니다');
+  }
+  return email;
+}
+
+function getAdminPasswordHash(): string | null {
+  return process.env.ADMIN_PASSWORD_HASH || null;
+}
+
+function getAdminPassword(): string {
+  const password = process.env.ADMIN_PASSWORD;
+  if (!password) {
+    throw new Error('ADMIN_PASSWORD 또는 ADMIN_PASSWORD_HASH 환경변수가 설정되지 않았습니다');
+  }
+  return password;
+}
 
 /**
  * 비밀번호 해시 비교 (Web Crypto API)
@@ -69,12 +86,12 @@ function hexToBytes(hex: string): Uint8Array {
 }
 
 /**
- * 간단한 비밀번호 비교 (개발용)
+ * 간단한 비밀번호 비교 (환경변수 기반)
  */
 async function simplePasswordCheck(password: string, email: string): Promise<boolean> {
-  // 개발 환경에서 사용할 기본 비밀번호
-  const DEV_ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '***REMOVED***';
-  return password === DEV_ADMIN_PASSWORD && email === ADMIN_EMAIL;
+  const adminPassword = getAdminPassword();
+  const adminEmail = getAdminEmail();
+  return password === adminPassword && email === adminEmail;
 }
 
 export async function POST(request: NextRequest) {
@@ -91,7 +108,8 @@ export async function POST(request: NextRequest) {
     }
 
     // 관리자 이메일 확인
-    if (email !== ADMIN_EMAIL) {
+    const adminEmail = getAdminEmail();
+    if (email !== adminEmail) {
       // 보안: 관리자가 아닌 경우에도 동일한 에러 메시지
       await logAdminAction(
         'unknown',
@@ -111,9 +129,10 @@ export async function POST(request: NextRequest) {
     // 비밀번호 검증
     let isValid = false;
 
-    if (ADMIN_PASSWORD_HASH) {
+    const adminPasswordHash = getAdminPasswordHash();
+    if (adminPasswordHash) {
       // 프로덕션: 해시 비교
-      isValid = await verifyPassword(password, ADMIN_PASSWORD_HASH);
+      isValid = await verifyPassword(password, adminPasswordHash);
     } else {
       // 개발: 간단 비교
       isValid = await simplePasswordCheck(password, email);

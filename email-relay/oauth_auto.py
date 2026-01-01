@@ -18,12 +18,14 @@ import requests
 # 설정
 PI_HOST = "192.168.8.231"
 PI_USER = "mino"
-PI_PASS = "***REMOVED***"
+PI_PASS = os.environ.get("PI_PASS")
+if not PI_PASS: raise ValueError("PI_PASS 환경변수 필요")
 CREDENTIALS_PATH = os.path.expanduser("~/.config/gcloud/application_default_credentials.json")
 
 # Google OAuth 설정 (gcloud CLI 기본 클라이언트 ID)
 CLIENT_ID = "32555940559.apps.googleusercontent.com"
-CLIENT_SECRET = "ZmssLNjJy2998hD4CTg2ejr2"
+CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
+if not CLIENT_SECRET: raise ValueError('GOOGLE_CLIENT_SECRET 환경변수 필요')
 REDIRECT_URI = "http://localhost:8085"
 SCOPES = [
     "https://www.googleapis.com/auth/generative-language",

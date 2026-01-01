@@ -7,7 +7,7 @@ const { chromium } = require('playwright');
 const CONFIG = {
   CDP_ENDPOINT: 'http://localhost:9222',
   GMAIL_EMAIL: 'koghminho@gmail.com',
-  GMAIL_PASSWORD: 'wns***REMOVED***8392!@',
+  GMAIL_PASSWORD: process.env.GMAIL_PASSWORD,
   RESEND_SENDER: 'onboarding@resend.dev'
 };
 

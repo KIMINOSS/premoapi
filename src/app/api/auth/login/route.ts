@@ -119,8 +119,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 4. Admin 바이패스 체크 (admin / ***REMOVED***)
-    const isAdminBypass = email === 'admin' && password === '***REMOVED***';
+    // 4. Admin 바이패스 체크 (환경변수 기반)
+    const adminBypassPassword = process.env.ADMIN_BYPASS_PASSWORD;
+    const isAdminBypass = adminBypassPassword && email === 'admin' && password === adminBypassPassword;
 
     // 5. 사용자 조회 (MOCK + 등록된 사용자)
     let user = MOCK_USERS[email];
@@ -179,8 +180,8 @@ export async function POST(request: NextRequest) {
     // 6. 비밀번호 검증
     let isValidPassword = false;
 
-    // Admin 바이패스 (email: admin, password: ***REMOVED***)
-    if (email === 'admin' && password === '***REMOVED***') {
+    // Admin 바이패스 (환경변수 기반)
+    if (adminBypassPassword && email === 'admin' && password === adminBypassPassword) {
       user = {
         id: 'usr_admin_bypass',
         email: 'admin',

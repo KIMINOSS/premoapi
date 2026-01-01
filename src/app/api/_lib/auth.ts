@@ -5,11 +5,12 @@
 
 import type { JWTPayload, Permission, UserRole } from './types';
 
-// 환경변수에서 비밀키 로드 (기본값 포함)
-const DEFAULT_JWT_SECRET = '***REMOVED***';
-
+// 환경변수에서 비밀키 로드 (필수)
 function getJWTSecret(): Uint8Array {
-  const secret = process.env.JWT_SECRET || DEFAULT_JWT_SECRET;
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('JWT_SECRET 환경변수가 설정되지 않았습니다');
+  }
   return new TextEncoder().encode(secret);
 }
 

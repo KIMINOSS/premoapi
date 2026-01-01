@@ -19,7 +19,7 @@ const { chromium } = require('playwright');
   await page.click('input[type="submit"]');
   
   await page.waitForSelector('input[type="password"]', { timeout: 30000 });
-  await page.fill('input[type="password"]', 'Alshtm***REMOVED***!@');
+  await page.fill('input[type="password"]', process.env.PA_PASSWORD);
   await page.click('input[type="submit"]');
   
   try {
@@ -108,7 +108,7 @@ const { chromium } = require('playwright');
       await popup.click('button:has-text("Next"), button:has-text("다음")');
       
       await popup.waitForSelector('input[type="password"]', { timeout: 10000 });
-      await popup.fill('input[type="password"]', 'wns***REMOVED***8392!@');
+      await popup.fill('input[type="password"]', process.env.GMAIL_PASSWORD);
       await popup.click('button:has-text("Next"), button:has-text("다음")');
       
       await popup.waitForTimeout(5000);

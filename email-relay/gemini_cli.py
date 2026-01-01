@@ -30,22 +30,12 @@ def get_client():
     except Exception:
         pass
 
-    # 2. 환경변수 API Key
+    # 2. 환경변수 API Key (필수)
     api_key = os.environ.get("GEMINI_API_KEY")
     if api_key:
         return genai.Client(api_key=api_key), "API Key (env)"
 
-    # 3. 기본 API Key (fallback)
-    fallback_keys = [
-        "***REMOVED***",
-        "***REMOVED***"
-    ]
-    for key in fallback_keys:
-        try:
-            return genai.Client(api_key=key), "API Key (fallback)"
-        except:
-            continue
-
+    # API Key가 없으면 None 반환
     return None, None
 
 def ask_gemini(question: str, context: str = "") -> dict:

@@ -15,12 +15,14 @@ import requests
 # 설정
 PI_HOST = "192.168.8.231"
 PI_USER = "mino"
-PI_PASS = "***REMOVED***"
+PI_PASS = os.environ.get("PI_PASS")
+if not PI_PASS: raise ValueError("PI_PASS 환경변수 필요")
 CREDENTIALS_PATH = os.path.expanduser("~/.config/gcloud/application_default_credentials.json")
 
 # OAuth 설정 - gcloud CLI 기본 클라이언트
 CLIENT_ID = "764086051850-6qr4p6gpi6hn506pt8ejuq83di341hur.apps.googleusercontent.com"
-CLIENT_SECRET = "***REMOVED***"
+CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
+if not CLIENT_SECRET: raise ValueError('GOOGLE_CLIENT_SECRET 환경변수 필요')
 REDIRECT_URI = "http://localhost:1"  # 존재하지 않는 포트로 리다이렉트
 
 SCOPES = [

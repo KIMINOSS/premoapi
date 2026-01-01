@@ -12,8 +12,10 @@ from datetime import datetime
 
 app = Flask(__name__)
 
-# Gemini API 설정
-API_KEY = "***REMOVED***"
+# Gemini API 설정 (환경변수 필수)
+API_KEY = os.environ.get("GEMINI_API_KEY")
+if not API_KEY:
+    raise ValueError("GEMINI_API_KEY 환경변수가 설정되지 않았습니다")
 client = genai.Client(api_key=API_KEY)
 
 # 대화 히스토리 저장

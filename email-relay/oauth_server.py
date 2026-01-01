@@ -213,13 +213,13 @@ def copy_to_pi():
 
     # 디렉토리 생성
     subprocess.run(
-        "sshpass -p '***REMOVED***' ssh -o StrictHostKeyChecking=no mino@192.168.8.231 'mkdir -p ~/.config/gcloud'",
+        "sshpass -p "$PI_PASS" ssh -o StrictHostKeyChecking=no mino@192.168.8.231 'mkdir -p ~/.config/gcloud'",
         shell=True, capture_output=True
     )
 
     # 파일 복사
     result = subprocess.run(
-        f"sshpass -p '***REMOVED***' scp -o StrictHostKeyChecking=no {creds_path} mino@192.168.8.231:~/.config/gcloud/",
+        f"sshpass -p "$PI_PASS" scp -o StrictHostKeyChecking=no {creds_path} mino@192.168.8.231:~/.config/gcloud/",
         shell=True, capture_output=True
     )
 
@@ -229,7 +229,7 @@ def copy_to_pi():
         # 테스트
         print()
         print("Gemini API 테스트 중...")
-        test_cmd = """sshpass -p '***REMOVED***' ssh -o StrictHostKeyChecking=no mino@192.168.8.231 'python3 -c "
+        test_cmd = """sshpass -p "$PI_PASS" ssh -o StrictHostKeyChecking=no mino@192.168.8.231 'python3 -c "
 from google import genai
 from google.auth import default
 creds, proj = default()

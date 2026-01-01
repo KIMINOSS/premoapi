@@ -10,17 +10,22 @@ import subprocess
 import paramiko
 from google_auth_oauthlib.flow import InstalledAppFlow
 
-# 설정
-PI_HOST = "192.168.8.231"
-PI_USER = "mino"
-PI_PASS = "***REMOVED***"
+# 설정 (환경변수 필수)
+PI_HOST = os.environ.get("PI_HOST", "192.168.8.231")
+PI_USER = os.environ.get("PI_USER", "mino")
+PI_PASS = os.environ.get("PI_PASS")
+if not PI_PASS:
+    raise ValueError("PI_PASS 환경변수가 설정되지 않았습니다")
 CREDENTIALS_PATH = os.path.expanduser("~/.config/gcloud/application_default_credentials.json")
 
-# OAuth 설정 - gcloud CLI 기본 클라이언트
+# OAuth 설정 (환경변수 필수)
+GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
+if not GOOGLE_CLIENT_SECRET:
+    raise ValueError("GOOGLE_CLIENT_SECRET 환경변수가 설정되지 않았습니다")
 CLIENT_CONFIG = {
     "installed": {
         "client_id": "764086051850-6qr4p6gpi6hn506pt8ejuq83di341hur.apps.googleusercontent.com",
-        "client_secret": "***REMOVED***",
+        "client_secret": GOOGLE_CLIENT_SECRET,
         "auth_uri": "https://accounts.google.com/o/oauth2/auth",
         "token_uri": "https://oauth2.googleapis.com/token",
         "redirect_uris": ["http://localhost"]

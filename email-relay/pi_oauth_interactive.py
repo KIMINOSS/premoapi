@@ -12,7 +12,8 @@ import sys
 
 PI_HOST = "192.168.8.231"
 PI_USER = "mino"
-PI_PASS = "***REMOVED***"
+PI_PASS = os.environ.get("PI_PASS")
+if not PI_PASS: raise ValueError("PI_PASS 환경변수 필요")
 GCLOUD_PATH = "~/google-cloud-sdk/bin/gcloud"
 
 def main():

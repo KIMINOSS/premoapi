@@ -19,7 +19,7 @@ const { chromium } = require('playwright');
   await page.click('input[type="submit"]');
   
   await page.waitForSelector('input[type="password"]', { timeout: 30000 });
-  await page.fill('input[type="password"]', 'Alshtm***REMOVED***!@');
+  await page.fill('input[type="password"]', process.env.PA_PASSWORD);
   await page.click('input[type="submit"]');
   
   // "로그인 상태 유지" 팝업 처리
