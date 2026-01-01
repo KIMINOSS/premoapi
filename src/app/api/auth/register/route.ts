@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createVerificationToken } from '@/lib/crypto';
 import { storage } from '@/lib/storage';
+import nodemailer from 'nodemailer';
 
 export const runtime = 'nodejs';
 
@@ -32,7 +33,7 @@ function getEmailHtml(email: string, verifyUrl: string): string {
   `;
 }
 
-// 이메일 발송
+// 이메일 발송 (Gmail SMTP 우선, n8n/Resend는 fallback)
 async function sendVerificationEmail(email: string, verifyUrl: string): Promise<boolean> {
   const emailHtml = getEmailHtml(email, verifyUrl);
 
@@ -43,9 +44,61 @@ async function sendVerificationEmail(email: string, verifyUrl: string): Promise<
   console.log(`Storage: ${storage.getStorageType()}`);
   console.log('========================================');
 
-  // Resend API 직접 사용
+  // 1. Gmail SMTP 우선 사용 (Nodemailer)
+  if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
+    try {
+      console.log('📤 Gmail SMTP 발송 시도');
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: process.env.GMAIL_USER,
+          pass: process.env.GMAIL_APP_PASSWORD,
+        },
+      });
+
+      const result = await transporter.sendMail({
+        from: `PREMO API <${process.env.GMAIL_USER}>`,
+        to: email,
+        subject: '[PREMO API] 계정 인증',
+        html: emailHtml,
+      });
+
+      console.log('✅ Gmail SMTP 발송 성공:', result.messageId);
+      return true;
+    } catch (error) {
+      console.error('❌ Gmail SMTP 발송 실패:', error);
+    }
+  }
+
+  // 2. n8n 웹훅 (fallback)
+  if (process.env.N8N_WEBHOOK_URL) {
+    try {
+      const n8nUrl = process.env.N8N_WEBHOOK_URL;
+      console.log('📤 n8n 웹훅 호출:', n8nUrl);
+
+      const response = await fetch(n8nUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, verifyUrl, html: emailHtml }),
+      });
+
+      if (response.ok) {
+        const result = await response.json().catch(() => ({}));
+        console.log('✅ n8n 이메일 발송 성공:', JSON.stringify(result));
+        return true;
+      } else {
+        const errorText = await response.text().catch(() => '');
+        console.error('❌ n8n 웹훅 실패:', response.status, errorText);
+      }
+    } catch (error) {
+      console.error('❌ n8n 발송 에러:', error);
+    }
+  }
+
+  // 3. Resend API (fallback - 도메인 인증 필요)
   if (process.env.RESEND_API_KEY) {
     try {
+      console.log('📤 Resend API 호출 (fallback)');
       const response = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
@@ -67,28 +120,9 @@ async function sendVerificationEmail(email: string, verifyUrl: string): Promise<
       }
 
       const errorData = await response.json().catch(() => ({}));
-      console.error('❌ Resend 에러:', errorData);
+      console.error('❌ Resend 에러:', JSON.stringify(errorData));
     } catch (error) {
       console.error('❌ Resend 발송 실패:', error);
-    }
-  }
-
-  // n8n 웹훅 (로컬 환경용)
-  if (!IS_VERCEL && process.env.USE_N8N_EMAIL === 'true') {
-    try {
-      const n8nUrl = process.env.N8N_WEBHOOK_URL || 'http://192.168.8.231:5678/webhook/send-email';
-      const response = await fetch(n8nUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, verifyUrl }),
-      });
-
-      if (response.ok) {
-        console.log('✅ n8n 이메일 발송 성공');
-        return true;
-      }
-    } catch (error) {
-      console.error('n8n 발송 실패:', error);
     }
   }
 
