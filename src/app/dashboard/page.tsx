@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import Image from 'next/image';
 
 // Config 모듈 import
@@ -28,8 +28,28 @@ import {
   formatTime,
 } from './utils';
 
+// Components
+import AnnouncementBanner from '@/components/admin/AnnouncementBanner';
+
 // Types
 import type { TabType, LangType, SubmitResult, DataRow } from './types';
+
+// 동적 메뉴 인터페이스 타입
+interface DynamicMenuInterface {
+  id: string;
+  name: { ko: string; en: string };
+  params: string[];
+  hidden?: boolean;
+  order?: number;
+}
+
+interface MenuConfig {
+  version: string;
+  lastUpdated: string;
+  needsUpdate: boolean;
+  HMC: DynamicMenuInterface[];
+  KMC: DynamicMenuInterface[];
+}
 
 export default function Dashboard() {
   // 상태 관리
@@ -57,9 +77,47 @@ export default function Dashboard() {
   const [submitResult, setSubmitResult] = useState<SubmitResult | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // 현재 인터페이스 정보
-  const interfaces = activeTab === 'HMC' ? HMC_INTERFACES : KMC_INTERFACES;
-  const currentInterface = interfaces[selectedIndex];
+  // 동적 메뉴 상태
+  const [dynamicMenus, setDynamicMenus] = useState<MenuConfig | null>(null);
+  const [menuVersion, setMenuVersion] = useState<string | null>(null);
+  const [menuLoading, setMenuLoading] = useState(true);
+
+  // 동적 메뉴 로드
+  const loadDynamicMenus = useCallback(async () => {
+    try {
+      const versionParam = menuVersion ? `?version=${menuVersion}` : '';
+      const response = await fetch(`/api/menus/config${versionParam}`);
+      const data = await response.json();
+
+      if (data.success && data.config) {
+        // 버전이 변경되었거나 처음 로드인 경우에만 업데이트
+        if (data.config.needsUpdate || !dynamicMenus) {
+          setDynamicMenus(data.config);
+          setMenuVersion(data.config.version);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load menu config:', err);
+      // 실패 시 정적 메뉴 사용 (fallback)
+    } finally {
+      setMenuLoading(false);
+    }
+  }, [menuVersion, dynamicMenus]);
+
+  // 초기 메뉴 로드
+  useEffect(() => {
+    loadDynamicMenus();
+  }, [loadDynamicMenus]);
+
+  // 동적 또는 정적 인터페이스 선택
+  const interfaces = useMemo(() => {
+    if (dynamicMenus) {
+      return activeTab === 'HMC' ? dynamicMenus.HMC : dynamicMenus.KMC;
+    }
+    return activeTab === 'HMC' ? HMC_INTERFACES : KMC_INTERFACES;
+  }, [activeTab, dynamicMenus]);
+
+  const currentInterface = interfaces[selectedIndex] || interfaces[0];
   const isInputInterface = currentInterface && INPUT_INTERFACES[currentInterface.id];
   const inputConfig = isInputInterface ? INPUT_INTERFACES[currentInterface.id] : null;
   const hasHeaderFields = inputConfig?.headerFields && inputConfig.headerFields.length > 0;
@@ -101,6 +159,8 @@ export default function Dashboard() {
 
   // 인터페이스 선택 시 파라미터 초기화
   useEffect(() => {
+    if (!currentInterface) return;
+
     const newParams: Record<string, string> = {};
     const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const thisMonth = new Date().toISOString().slice(0, 7).replace('-', '');
@@ -116,7 +176,7 @@ export default function Dashboard() {
     });
     setParamValues(newParams);
     setData(null);
-  }, [selectedIndex, activeTab, currentInterface.params]);
+  }, [selectedIndex, activeTab, currentInterface]);
 
   // 페이지 로드 시 자동 토큰 인증
   useEffect(() => {
@@ -434,6 +494,18 @@ export default function Dashboard() {
     ? getOrderedHeaders(currentInterface.id, Object.keys(data[0]), paramValues['I_ZPLDAYS'] ? parseInt(paramValues['I_ZPLDAYS'], 10) : undefined)
     : getOrderedHeaders(currentInterface.id, defaultHeaders, paramValues['I_ZPLDAYS'] ? parseInt(paramValues['I_ZPLDAYS'], 10) : undefined);
 
+  // 메뉴 로딩 중 스켈레톤
+  if (menuLoading) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-red-500 border-t-transparent mx-auto mb-4"></div>
+          <p className="text-gray-600">{lang === 'ko' ? '메뉴 로딩 중...' : 'Loading menu...'}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-100 text-gray-800 flex flex-col">
       {/* 헤더 */}
@@ -493,7 +565,7 @@ export default function Dashboard() {
           </button>
 
           {/* 새로고침 */}
-          <button className="p-2 hover:bg-gray-200 rounded-lg transition-colors text-gray-500">
+          <button onClick={loadDynamicMenus} className="p-2 hover:bg-gray-200 rounded-lg transition-colors text-gray-500" title={lang === 'ko' ? '메뉴 새로고침' : 'Refresh Menu'}>
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
           </button>
 
@@ -535,6 +607,11 @@ export default function Dashboard() {
 
         {/* 메인 컨텐츠 */}
         <main className={`flex-1 flex flex-col overflow-hidden bg-gray-50 border-t-2 transition-all duration-500 ${activeTab === 'HMC' ? 'border-blue-400' : 'border-red-400'}`}>
+          {/* 공지사항 배너 */}
+          <div className="px-4 pt-4">
+            <AnnouncementBanner location="dashboard" lang={lang} />
+          </div>
+
           {/* 상단 바 */}
           <div className="px-4 py-2 border-b border-gray-200 bg-white flex items-center justify-between">
             <div>
@@ -788,20 +865,20 @@ export default function Dashboard() {
                   <span className="text-xs text-gray-500">{lang === 'ko' ? '컬럼:' : 'Cols:'}</span>
                   <span className="text-xs font-medium text-gray-700">{displayHeaders.length}</span>
                   <span className="text-gray-300">|</span>
-                  <span className="text-xs text-gray-500">{lang === 'ko' ? '← → 키로 스크롤' : '← → to scroll'}</span>
+                  <span className="text-xs text-gray-500">{lang === 'ko' ? '좌우 키로 스크롤' : 'Use arrow keys to scroll'}</span>
                   <div className="flex-1" />
                   {(!data || data.length === 0) && (<span className="text-xs text-orange-500 font-medium animate-pulse">{lang === 'ko' ? '조회 대기중...' : 'Awaiting query...'}</span>)}
-                  <button onClick={() => { const el = document.getElementById('data-table'); if(el) el.scrollLeft = 0; }} className="px-2 py-0.5 text-xs bg-gray-200 hover:bg-gray-300 rounded">{lang === 'ko' ? '◀ 처음' : '◀ First'}</button>
-                  <button onClick={() => { const el = document.getElementById('data-table'); if(el) el.scrollLeft = el.scrollWidth; }} className="px-2 py-0.5 text-xs bg-gray-200 hover:bg-gray-300 rounded">{lang === 'ko' ? '끝 ▶' : 'End ▶'}</button>
+                  <button onClick={() => { const el = document.getElementById('data-table'); if(el) el.scrollLeft = 0; }} className="px-2 py-0.5 text-xs bg-gray-200 hover:bg-gray-300 rounded">{lang === 'ko' ? '처음' : 'First'}</button>
+                  <button onClick={() => { const el = document.getElementById('data-table'); if(el) el.scrollLeft = el.scrollWidth; }} className="px-2 py-0.5 text-xs bg-gray-200 hover:bg-gray-300 rounded">{lang === 'ko' ? '끝' : 'End'}</button>
                 </div>
-                <div id="data-table" className="overflow-x-auto overflow-y-auto flex-1" style={{scrollbarWidth: 'auto', scrollbarColor: '#94a3b8 #e2e8f0', height: 'calc(100vh - 200px)'}}>
+                <div id="data-table" className="overflow-x-auto overflow-y-auto flex-1" style={{scrollbarWidth: 'auto', scrollbarColor: '#94a3b8 #e2e8f0', height: 'calc(100vh - 280px)'}}>
                   <table className="w-full text-xs">
                     <thead className="sticky top-0 z-10">
                       <tr className="bg-gray-100">
                         <th className="px-2 py-1.5 text-left font-medium text-gray-600 border-b border-gray-200 bg-gray-100 sticky left-0 z-20">#</th>
                         {displayHeaders.map((key) => (
                           <th key={key} className="px-2 py-1.5 text-left font-medium text-gray-600 border-b border-gray-200 whitespace-nowrap cursor-pointer hover:bg-gray-100" onClick={() => handleSort(key)}>
-                            {getFieldLabel(key, lang)}{sortKey === key && (sortOrder === 'asc' ? ' ▲' : ' ▼')}
+                            {getFieldLabel(key, lang)}{sortKey === key && (sortOrder === 'asc' ? ' ^' : ' v')}
                           </th>
                         ))}
                       </tr>
@@ -834,7 +911,7 @@ export default function Dashboard() {
           {/* 상태바 */}
           <div className="px-6 py-2 bg-white border-t border-gray-200 text-sm text-gray-500 flex justify-between items-center">
             <span>{data && data.length > 0 ? (<>Ready | Rows: {data.length} | Columns: {Object.keys(data[0]).length}</>) : (<>Ready | Columns: {(INTERFACE_FIELD_ORDER[currentInterface.id] || []).length}</>)}</span>
-            <span className="text-xs text-gray-400">Developed by Minho Kim</span>
+            <span className="text-xs text-gray-400">Developed by Minho Kim{dynamicMenus && ` | Menu v${dynamicMenus.version}`}</span>
           </div>
         </main>
       </div>

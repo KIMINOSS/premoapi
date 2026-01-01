@@ -12,6 +12,12 @@ const PROTECTED_PATHS = [
   '/dashboard'
 ];
 
+// 관리자 전용 경로 (role: admin 필수)
+const ADMIN_PATHS = [
+  '/admin',
+  '/api/admin'
+];
+
 // 인증 없이 접근 가능한 경로
 const PUBLIC_PATHS = [
   '/api/auth/login',
@@ -21,10 +27,13 @@ const PUBLIC_PATHS = [
   '/api/oauth',
   '/api/call',
   '/api/responses',
+  '/api/announcements/active',  // 공지사항 (공개)
+  '/api/menus/config',          // 메뉴 설정 (공개)
   '/',
   '/login',
   '/register',
-  '/verify'
+  '/verify',
+  '/admin/login'                // 관리자 로그인 (공개)
 ];
 
 // Rate Limiting 설정
@@ -52,6 +61,20 @@ function checkRateLimit(ip: string): { allowed: boolean; remaining: number } {
   
   record.count += 1;
   return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - record.count };
+}
+
+/**
+ * 관리자 전용 경로인지 확인
+ */
+function isAdminPath(pathname: string): boolean {
+  for (const path of ADMIN_PATHS) {
+    if (pathname === path || pathname.startsWith(path + '/')) {
+      // 관리자 로그인 페이지는 제외
+      if (pathname === '/admin/login') return false;
+      return true;
+    }
+  }
+  return false;
 }
 
 /**
@@ -188,7 +211,22 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  // 5. 요청에 사용자 정보 추가 (API 핸들러에서 사용)
+  // 5. 관리자 경로 권한 체크
+  if (isAdminPath(pathname)) {
+    const role = payload.role as string;
+    if (role !== 'admin') {
+      if (pathname.startsWith('/api/')) {
+        return NextResponse.json(
+          { error: '관리자 권한이 필요합니다.', code: 'FORBIDDEN' },
+          { status: 403 }
+        );
+      }
+      // 관리자 페이지 접근 시 관리자 로그인으로 리다이렉트
+      return NextResponse.redirect(new URL('/admin/login', request.url));
+    }
+  }
+
+  // 6. 요청에 사용자 정보 추가 (API 핸들러에서 사용)
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-user-id', payload.sub as string);
   requestHeaders.set('x-user-email', payload.email as string);
