@@ -22,6 +22,7 @@
   "dependencies": {
     "@cloudflare/next-on-pages": "^1.13.16",
     "@tanstack/react-table": "^8.21.3",
+    "@upstash/redis": "^1.36.0",
     "lucide-react": "^0.562.0",
     "next": "^15.5.9",
     "nodemailer": "^7.0.12",

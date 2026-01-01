@@ -8,22 +8,9 @@ import { createAccessToken, createRefreshToken } from '../../_lib/auth';
 import { verifyPassword } from '../../_lib/password';
 import { validateLoginRequest } from '../../_lib/validate';
 import type { LoginResponse, PublicUser, User, Permission, UserRole } from '../../_lib/types';
-import { promises as fs } from 'fs';
-import path from 'path';
+import { storage } from '@/lib/storage';
 
-export const runtime = 'nodejs'; // 파일 시스템 접근 필요
-
-const USERS_FILE = path.join(process.cwd(), 'data', 'users.json');
-
-// 등록된 사용자 로드
-async function loadRegisteredUsers(): Promise<Record<string, { passwordHash: string; name: string; createdAt: string }>> {
-  try {
-    const data = await fs.readFile(USERS_FILE, 'utf-8');
-    return JSON.parse(data);
-  } catch {
-    return {};
-  }
-}
+export const runtime = 'nodejs';
 
 // 간단한 비밀번호 검증 (4자리 PIN용)
 function verifySimplePassword(password: string, hash: string): boolean {
@@ -139,10 +126,9 @@ export async function POST(request: NextRequest) {
     let user = MOCK_USERS[email];
     let isRegisteredUser = false;
 
-    // MOCK에 없으면 등록된 사용자에서 찾기
+    // MOCK에 없으면 등록된 사용자에서 찾기 (Upstash Redis 또는 파일)
     if (!user && !isAdminBypass) {
-      const registeredUsers = await loadRegisteredUsers();
-      const regUser = registeredUsers[email];
+      const regUser = await storage.getUser(email);
 
       if (regUser) {
         isRegisteredUser = true;
