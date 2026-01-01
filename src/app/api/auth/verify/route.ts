@@ -8,7 +8,9 @@ import path from 'path';
 
 export const runtime = 'nodejs';
 
-const DATA_DIR = path.join(process.cwd(), 'data');
+// Vercel 환경에서는 /tmp 사용
+const IS_VERCEL = process.env.VERCEL === '1';
+const DATA_DIR = IS_VERCEL ? '/tmp' : path.join(process.cwd(), 'data');
 const PENDING_FILE = path.join(DATA_DIR, 'pending-registrations.json');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 

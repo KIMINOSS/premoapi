@@ -17,9 +17,12 @@ export const runtime = 'nodejs'; // 파일 시스템 접근 필요
 
 const ALLOWED_DOMAIN = 'grupopremo.com';
 const TOKEN_EXPIRY_HOURS = 24;
-const DATA_DIR = path.join(process.cwd(), 'data');
+
+// Vercel 환경에서는 /tmp 사용, 로컬에서는 data 디렉토리 사용
+const IS_VERCEL = process.env.VERCEL === '1';
+const DATA_DIR = IS_VERCEL ? '/tmp' : path.join(process.cwd(), 'data');
 const PENDING_FILE = path.join(DATA_DIR, 'pending-registrations.json');
-const USERS_FILE = path.join(DATA_DIR, 'users.json');
+const USERS_FILE = IS_VERCEL ? path.join(process.cwd(), 'data', 'users.json') : path.join(DATA_DIR, 'users.json');
 
 // 토큰 생성
 function generateToken(): string {
