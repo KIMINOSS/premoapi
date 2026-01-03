@@ -22,12 +22,14 @@
   "dependencies": {
     "@cloudflare/next-on-pages": "^1.13.16",
     "@tanstack/react-table": "^8.21.3",
+    "@types/react-window": "^1.8.8",
     "@upstash/redis": "^1.36.0",
     "lucide-react": "^0.562.0",
     "next": "^15.5.9",
     "nodemailer": "^7.0.12",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "react-window": "^2.2.3",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
@@ -48,6 +50,7 @@
     "eslint-config-next": "^15.5.2",
     "jsdom": "^27.4.0",
     "msw": "^2.12.7",
+    "playwright": "^1.57.0",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.0.16",

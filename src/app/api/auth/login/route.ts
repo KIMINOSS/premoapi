@@ -12,10 +12,37 @@ import { storage } from '@/lib/storage';
 
 export const runtime = 'nodejs';
 
-// 간단한 비밀번호 검증 (4자리 PIN용)
-function verifySimplePassword(password: string, hash: string): boolean {
-  const computed = Buffer.from(password + '_premo_salt').toString('base64');
-  return computed === hash;
+// 비밀번호 검증 (PBKDF2 기반)
+async function verifySimplePassword(password: string, hash: string): Promise<boolean> {
+  // PBKDF2 해시 형식: iterations$salt$hash
+  const parts = hash.split('$');
+  if (parts.length !== 3) {
+    // 레거시 Base64 해시 지원 (마이그레이션용)
+    const computed = Buffer.from(password + '_premo_salt').toString('base64');
+    return timingSafeEqual(computed, hash);
+  }
+
+  const [iterations, salt, storedHash] = parts;
+  const crypto = await import('crypto');
+  const derivedKey = crypto.pbkdf2Sync(
+    password,
+    salt,
+    parseInt(iterations, 10),
+    32,
+    'sha256'
+  ).toString('hex');
+
+  return timingSafeEqual(derivedKey, storedHash);
+}
+
+// 타이밍 공격 방지용 안전한 비교
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return result === 0;
 }
 
 // 로그인 실패 임계값
@@ -28,7 +55,7 @@ const MOCK_USERS: Record<string, User & { passwordHash: string }> = {
   'admin@premo.io': {
     id: 'usr_admin001',
     email: 'admin@premo.io',
-    passwordHash: '100000$0123456789abcdef$abcdef0123456789', // 실제로는 해시된 값
+    passwordHash: '100000$0123456789abcdef$abcdef0123456789',
     name: '관리자',
     role: 'admin',
     status: 'active',
@@ -43,6 +70,39 @@ const MOCK_USERS: Record<string, User & { passwordHash: string }> = {
     deletedAt: null
   }
 };
+
+// 환경변수 관리자 계정 체크 (타이밍 공격 방지)
+function checkEnvAdmin(email: string, password: string): (User & { passwordHash: string }) | null {
+  const adminEmail = process.env.ADMIN_EMAIL;
+  const adminPassword = process.env.ADMIN_PASSWORD;
+
+  if (!adminEmail || !adminPassword) return null;
+
+  // 타이밍 공격 방지: 항상 두 비교 모두 수행
+  const emailMatch = timingSafeEqual(email, adminEmail);
+  const passwordMatch = timingSafeEqual(password, adminPassword);
+
+  if (emailMatch && passwordMatch) {
+    return {
+      id: 'usr_env_admin',
+      email: adminEmail,
+      passwordHash: '',
+      name: '시스템 관리자',
+      role: 'admin' as UserRole,
+      status: 'active',
+      company: null,
+      department: 'IT',
+      permissions: ['*'] as Permission[],
+      loginAttempts: 0,
+      requirePasswordChange: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      lastLoginAt: null,
+      deletedAt: null
+    };
+  }
+  return null;
+}
 
 // 로그인 시도 추적 (인메모리, 프로덕션에서는 KV 사용)
 const loginAttempts: Map<string, { count: number; lastAttempt: number }> = new Map();
@@ -119,16 +179,62 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 4. Admin 바이패스 체크 (환경변수 기반)
-    const adminBypassPassword = process.env.ADMIN_BYPASS_PASSWORD;
-    const isAdminBypass = adminBypassPassword && email === 'admin' && password === adminBypassPassword;
+    // 4. 환경변수 관리자 계정 체크 (admin@premo.kr)
+    const envAdmin = checkEnvAdmin(email, password);
+    if (envAdmin) {
+      // 환경변수 관리자로 바로 로그인 처리
+      clearLoginAttempts(email);
+      const accessToken = await createAccessToken(
+        envAdmin.id,
+        envAdmin.email,
+        envAdmin.role as UserRole,
+        envAdmin.permissions as Permission[],
+        3600
+      );
+      const refreshToken = createRefreshToken();
+
+      const publicUser: PublicUser = {
+        id: envAdmin.id,
+        email: envAdmin.email,
+        name: envAdmin.name,
+        role: envAdmin.role as UserRole,
+        company: envAdmin.company,
+        department: envAdmin.department,
+        permissions: envAdmin.permissions as Permission[]
+      };
+
+      const res = NextResponse.json({
+        accessToken,
+        refreshToken,
+        expiresIn: 3600,
+        user: publicUser
+      });
+
+      res.cookies.set('access_token', accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 3600,
+        path: '/'
+      });
+
+      res.cookies.set('refresh_token', refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 604800,
+        path: '/api/auth'
+      });
+
+      return res;
+    }
 
     // 5. 사용자 조회 (MOCK + 등록된 사용자)
     let user = MOCK_USERS[email];
     let isRegisteredUser = false;
 
     // MOCK에 없으면 등록된 사용자에서 찾기 (Upstash Redis 또는 파일)
-    if (!user && !isAdminBypass) {
+    if (!user) {
       const regUser = await storage.getUser(email);
 
       if (regUser) {
@@ -154,7 +260,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (!user && !isAdminBypass) {
+    if (!user) {
       recordFailedAttempt(email);
       return NextResponse.json(
         { error: '이메일 또는 비밀번호가 일치하지 않습니다.', code: 'INVALID_CREDENTIALS' },
@@ -162,7 +268,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 5. 계정 상태 확인 (admin 바이패스는 건너뜀)
+    // 6. 계정 상태 확인
     if (user && user.status === 'inactive') {
       return NextResponse.json(
         { error: '비활성화된 계정입니다. 관리자에게 문의하세요.', code: 'ACCOUNT_DISABLED' },
@@ -177,32 +283,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 6. 비밀번호 검증
+    // 7. 비밀번호 검증
     let isValidPassword = false;
 
-    // Admin 바이패스 (환경변수 기반)
-    if (adminBypassPassword && email === 'admin' && password === adminBypassPassword) {
-      user = {
-        id: 'usr_admin_bypass',
-        email: 'admin',
-        passwordHash: '',
-        name: 'Admin',
-        role: 'admin' as UserRole,
-        status: 'active',
-        company: null,
-        department: 'PREMO IT',
-        permissions: ['*'] as Permission[],
-        loginAttempts: 0,
-        requirePasswordChange: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        lastLoginAt: null,
-        deletedAt: null
-      };
-      isValidPassword = true;
-    } else if (isRegisteredUser) {
-      // 등록된 사용자는 간단한 해시 검증 (4자리 PIN)
-      isValidPassword = verifySimplePassword(password, user.passwordHash);
+    if (isRegisteredUser) {
+      // 등록된 사용자는 PBKDF2 해시 검증
+      isValidPassword = await verifySimplePassword(password, user.passwordHash);
     } else {
       // MOCK 사용자는 기존 검증
       isValidPassword = await verifyPassword(password, user.passwordHash);

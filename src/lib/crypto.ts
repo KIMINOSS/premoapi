@@ -6,9 +6,15 @@
 const ALGORITHM = 'AES-GCM';
 const KEY_LENGTH = 256;
 
-// 환경변수에서 시크릿 키 가져오기
+// 환경변수에서 시크릿 키 가져오기 (기본값 없음 - 보안 강화)
 function getSecretKey(): string {
-  const secret = process.env.JWT_SECRET || 'premo-default-secret-key-change-in-production';
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('JWT_SECRET 환경변수가 설정되지 않았습니다. 보안을 위해 반드시 설정하세요.');
+  }
+  if (secret.length < 32) {
+    throw new Error('JWT_SECRET은 최소 32자 이상이어야 합니다.');
+  }
   return secret;
 }
 

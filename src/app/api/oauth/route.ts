@@ -91,6 +91,15 @@ export async function POST(request: NextRequest) {
       }
 
       const data = await response.json();
+
+      // 응답 데이터 검증
+      if (!data || typeof data !== 'object') {
+        return NextResponse.json(
+          { error: '유효하지 않은 OAuth 응답 형식', code: 'INVALID_RESPONSE' },
+          { status: 502 }
+        );
+      }
+
       const token = data.accToken || data.access_token;
 
       if (!token) {
@@ -100,7 +109,22 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      return NextResponse.json({ token, company });
+      // 토큰 형식 검증 (최소 길이 및 문자 패턴)
+      if (typeof token !== 'string' || token.length < 20 || !/^[A-Za-z0-9._-]+$/.test(token)) {
+        return NextResponse.json(
+          { error: '유효하지 않은 토큰 형식', code: 'INVALID_TOKEN_FORMAT' },
+          { status: 502 }
+        );
+      }
+
+      // 만료 시간 정보 (있을 경우)
+      const expiresIn = data.expires_in || data.expiresIn || 3600;
+
+      return NextResponse.json({
+        token,
+        company,
+        expiresIn: typeof expiresIn === 'number' ? expiresIn : 3600
+      });
     } catch (fetchError) {
       clearTimeout(timeoutId);
 

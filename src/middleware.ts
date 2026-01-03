@@ -1,9 +1,62 @@
 /**
  * Next.js 전역 미들웨어
- * 인증 및 권한 검증
+ * 인증, 권한 검증, 보안 헤더
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+
+// 허용된 도메인 (CORS)
+const ALLOWED_ORIGINS = [
+  'https://premokorapi.vercel.app',
+  'https://premo.kr',
+  process.env.NEXT_PUBLIC_BASE_URL,
+].filter(Boolean);
+
+/**
+ * 보안 헤더 추가
+ */
+function addSecurityHeaders(response: NextResponse): void {
+  // XSS 방지
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('X-XSS-Protection', '1; mode=block');
+
+  // Clickjacking 방지
+  response.headers.set('X-Frame-Options', 'DENY');
+
+  // HTTPS 강제 (프로덕션)
+  if (process.env.NODE_ENV === 'production') {
+    response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+
+  // CSP (Content Security Policy)
+  response.headers.set('Content-Security-Policy',
+    "default-src 'self'; " +
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+    "style-src 'self' 'unsafe-inline'; " +
+    "img-src 'self' data: https:; " +
+    "font-src 'self' data:; " +
+    "connect-src 'self' https://stg-apigw-kr.hmg-corp.io https://*.upstash.io;"
+  );
+
+  // Referrer Policy
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+  // Permissions Policy
+  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+}
+
+/**
+ * CORS 헤더 추가
+ */
+function addCORSHeaders(response: NextResponse, origin: string | null): void {
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    response.headers.set('Access-Control-Allow-Origin', origin);
+    response.headers.set('Access-Control-Allow-Credentials', 'true');
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    response.headers.set('Access-Control-Max-Age', '86400');
+  }
+}
 
 // 인증이 필요한 경로 패턴
 const PROTECTED_PATHS = [
@@ -130,14 +183,14 @@ function decodeJWTPayload(token: string): Record<string, unknown> | null {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  
-  // 🔧 개발 환경 인증 우회 (배포 시 자동 비활성화)
-  if (process.env.NODE_ENV === 'development') {
+
+  // 🔧 Playwright 테스트 환경만 우회
+  if (process.env.PLAYWRIGHT_TEST === '1') {
     const response = NextResponse.next();
     response.headers.set('X-Dev-Bypass', 'true');
     return response;
   }
-  
+
   // 1. Rate Limiting
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 
              request.headers.get('x-real-ip') || 
@@ -159,12 +212,24 @@ export async function middleware(request: NextRequest) {
     );
   }
 
+  const origin = request.headers.get('origin');
+
+  // OPTIONS 요청 처리 (CORS Preflight)
+  if (request.method === 'OPTIONS') {
+    const response = new NextResponse(null, { status: 204 });
+    addCORSHeaders(response, origin);
+    addSecurityHeaders(response);
+    return response;
+  }
+
   // 2. 보호 경로 체크
   if (!isProtectedPath(pathname)) {
     // 공개 경로는 Rate Limit 헤더만 추가
     const response = NextResponse.next();
     response.headers.set('X-RateLimit-Limit', String(RATE_LIMIT_MAX_REQUESTS));
     response.headers.set('X-RateLimit-Remaining', String(rateLimit.remaining));
+    addCORSHeaders(response, origin);
+    addSecurityHeaders(response);
     return response;
   }
 
@@ -233,15 +298,17 @@ export async function middleware(request: NextRequest) {
   requestHeaders.set('x-user-role', payload.role as string);
   requestHeaders.set('x-user-permissions', JSON.stringify(payload.permissions || []));
 
-  // 6. 응답 생성
+  // 7. 응답 생성
   const response = NextResponse.next({
     request: {
       headers: requestHeaders
     }
   });
-  
+
   response.headers.set('X-RateLimit-Limit', String(RATE_LIMIT_MAX_REQUESTS));
   response.headers.set('X-RateLimit-Remaining', String(rateLimit.remaining));
+  addCORSHeaders(response, origin);
+  addSecurityHeaders(response);
 
   return response;
 }
